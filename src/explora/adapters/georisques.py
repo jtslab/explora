@@ -7,13 +7,17 @@ from explora.core.models import RisqueCommune
 
 
 def parse_risques(code_insee: str, raw: dict[str, Any]) -> RisqueCommune:
-    libelles: list[str] = []
+    """Sépare les familles de risques (code à 2 chiffres, ex. `11` Inondation) de leurs
+    sous-risques (code à 3 chiffres, ex. `112` crue lente), que GASPAR mélange."""
+    familles: list[str] = []
+    sous_risques: list[str] = []
     for commune in raw.get("data", []):
         for risque in commune.get("risques_detail", []):
             libelle = risque.get("libelle_risque_long")
-            if libelle and libelle not in libelles:
-                libelles.append(libelle)
-    return RisqueCommune(code_insee=code_insee, risques=libelles)
+            cible = sous_risques if len(str(risque.get("num_risque", ""))) > 2 else familles
+            if libelle and libelle not in cible:
+                cible.append(libelle)
+    return RisqueCommune(code_insee=code_insee, risques=familles, sous_risques=sous_risques)
 
 
 class GeorisquesAdapter(SourceAdapter):
