@@ -54,10 +54,10 @@ flowchart LR
 | Brique | État |
 | --- | --- |
 | Client HTTP commun, cache, rate-limit, retry | fait, testé |
-| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers | fait, testé avec API simulées |
+| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, vœux Parcoursup, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
 | Indicateurs (rendement, tension, vitalité) et score 4 axes | fait, testé |
 | API : `/health`, `/sources`, `/communes/{code_insee}` | fait |
-| Adaptateurs ESR, DVF, BPE, SIRENE, GTFS/GBFS, qualité de l'air | à faire |
+| Adaptateurs effectifs ESR, DVF, SIRENE, GTFS/GBFS, qualité de l'air | à faire |
 | Schéma PostGIS et job d'ingestion | à faire |
 | Front cartographique et pages ville | à faire |
 
@@ -73,6 +73,7 @@ Prérequis : [uv](https://docs.astral.sh/uv/) et Docker.
 cp .env.example .env
 uv sync
 uv run pytest                 # tests, toutes les API sont simulées
+uv run pytest -m live         # appels réels aux API publiques (réseau requis)
 uv run uvicorn explora.api.main:app --reload
 # ou, avec PostGIS :
 docker compose up --build

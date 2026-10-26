@@ -31,6 +31,8 @@ class GeocodeResult(BaseModel):
 class RisqueCommune(BaseModel):
     code_insee: str
     risques: list[str]
+    """Familles de risques (Inondation, Séisme...) : base de l'indicateur `nb_risques`."""
+    sous_risques: list[str] = Field(default_factory=list)
 
 
 class LoyerCommune(BaseModel):
@@ -52,3 +54,42 @@ class LoyerCommune(BaseModel):
         if self.r2_ajuste is None or self.nb_observations is None:
             return False
         return self.r2_ajuste >= 0.5 and self.nb_observations >= 30
+
+
+class FormationVoeux(BaseModel):
+    """Formation post-bac avec ses vœux et sa capacité d'accueil (une session)."""
+
+    session: str
+    code_uai: str
+    etablissement: str
+    ville: str
+    """Libellé de la ville tel que publié (pas de code INSEE dans la source)."""
+    code_departement: str
+    filiere: str
+    formation: str
+    capacite: int | None = None
+    voeux: int | None = None
+    admis: int | None = None
+    point: Point | None = None
+
+
+class ResidenceEtudiante(BaseModel):
+    """Résidence universitaire publique."""
+
+    id: str
+    nom: str
+    zone: str | None = None
+    adresse: str | None = None
+    point: Point | None = None
+    places_estimees: int | None = None
+    """Extrait du texte descriptif, faute de champ structuré : à traiter comme une estimation."""
+
+
+class LogementsCommune(BaseModel):
+    """Résidences principales selon le statut d'occupation (recensement INSEE)."""
+
+    code_insee: str
+    annee: str
+    residences_principales: float | None = None
+    locataires: float | None = None
+    locataires_meubles: float | None = None
