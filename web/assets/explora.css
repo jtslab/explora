@@ -419,6 +419,12 @@ details.toutes ul { list-style: none; margin: 0; padding: 0; break-inside: avoid
 .formations .etab { font-size: 13.5px; }
 .formations .tags { font-size: 12.5px; color: var(--discret); }
 .formations .metiers { font-size: 12.5px; color: var(--discret); overflow-wrap: anywhere; }
+.formations .mention { font-weight: 600; overflow-wrap: anywhere; }
+.formations .devenir { font-size: 12.5px; color: var(--accent); overflow-wrap: anywhere; }
+.formations ul.etabs { padding: 4px 0 0 12px; border-left: 2px solid var(--trait); margin-top: 4px; gap: 0; }
+.formations ul.etabs li { border-top: 0; padding: 4px 0; }
+.formations .parcours { font-size: 12.5px; color: var(--discret); }
+.formations .parcours a { font-weight: 500; padding: 0 3px; }
 .formations .aide { margin: 4px 0 0; font-size: 12.5px; color: var(--discret); max-width: 75ch; }
 .formations .aucune { margin: 0; color: var(--discret); }
 .encadre { font-size: 13.5px; line-height: 1.5; padding: 12px 14px; border-radius: var(--rayon); background: var(--alerte-fond); border: 1px solid var(--alerte-trait); max-width: 75ch; }

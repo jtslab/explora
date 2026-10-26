@@ -19,6 +19,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoes
 
 from explora.modules.etudiant.scoring import Axe
 from explora.site import formations as fm
+from explora.site import insertion as ins
 from explora.site import metiers as mt
 from explora.site.donnees import ExportVilles, FeatureVille, ProprietesVille, charger, slugs
 
@@ -110,6 +111,19 @@ def teinte(score: float | None) -> str:
 
 def pourcent(valeur: float | None, decimales: int = 1) -> str:
     return "n.d." if valeur is None else nombre(valeur * 100, decimales, "%")
+
+
+def devenir(chiffres: ins.Insertion) -> str:
+    """« 85 % poursuivent leurs études · parmi les autres, 58 % en emploi à 12 mois · … »."""
+    morceaux = []
+    if chiffres.poursuite is not None:
+        morceaux.append(f"{nombre(chiffres.poursuite, 0, '%')} poursuivent leurs études")
+    if chiffres.emploi is not None:
+        autres = "parmi les autres, " if morceaux else ""
+        morceaux.append(f"{autres}{nombre(chiffres.emploi, 0, '%')} en emploi à 12 mois")
+    if chiffres.salaire is not None:
+        morceaux.append(f"salaire médian {nombre(chiffres.salaire, 0, '€')} net par mois")
+    return " · ".join(morceaux)
 
 
 def axes_tries(v: Ville) -> list[tuple[str, float]]:
@@ -208,6 +222,7 @@ def _environnement(dossier_web: Path) -> Environment:
     env.filters["nombre"] = nombre
     env.filters["pourcent"] = pourcent
     env.filters["teinte"] = teinte
+    env.filters["devenir"] = devenir
     env.globals.update(
         FORMATIONS=FORMATIONS,
         AXES=AXES,
@@ -223,47 +238,83 @@ def _environnement(dossier_web: Path) -> Environment:
 
 
 @dataclass(frozen=True)
-class FormationVille:
-    mention: str
+class OffreVille:
+    """Une formation dans un établissement, avec ses parcours (une fiche chacun)."""
+
     etablissement: str
     public: bool
     apprentissage: bool
-    url: str
+    urls: tuple[str, ...]
+    insertion: ins.Insertion | None = None
+    """Devenir des diplômés de l'établissement (le chiffre national va sur la formation)."""
+
+
+@dataclass(frozen=True)
+class FormationVille:
+    mention: str
+    offres: tuple[OffreVille, ...]
     metiers: tuple[str, ...] = ()
     """Métiers visés d'après le RNCP (libellés ROME)."""
+    insertion_nationale: ins.Insertion | None = None
 
 
 def formations_par_type(
     index: fm.IndexFormations | None,
     code_insee: str,
     metiers: mt.IndexMetiers | None = None,
+    insertion: ins.IndexInsertion | None = None,
 ) -> list[tuple[str, list[FormationVille]]]:
-    """Formations d'une ville groupées par type (BTS, Licence...), les plus fournis d'abord."""
+    """Formations d'une ville groupées par type (BTS, Licence...), les plus fournis d'abord.
+
+    Une mention proposée par plusieurs établissements n'apparaît qu'une fois, avec la liste
+    de ses établissements.
+    """
     if index is None:
         return []
-    groupes: dict[str, list[FormationVille]] = defaultdict(list)
+    # mention → établissement → offres (un établissement propose parfois plusieurs parcours)
+    par_mention: dict[int, dict[str, list[fm.Offre]]] = defaultdict(lambda: defaultdict(list))
+    nationale: dict[int, ins.Insertion] = {}
     for o in index.offres.get(code_insee, []):
-        mention = index.mentions[o.mention]
         etab = index.etablissements.get(o.uai)
+        par_mention[o.mention][etab.nom if etab else o.uai].append(o)
+        chiffres = insertion.offres.get(o.code) if insertion else None
+        if chiffres and chiffres.national:
+            nationale[o.mention] = chiffres
+
+    def offre_ville(nom: str, offres: list[fm.Offre]) -> OffreVille:
+        etab = index.etablissements.get(offres[0].uai)
+        locaux = [
+            c
+            for o in offres
+            if insertion and (c := insertion.offres.get(o.code)) and not c.national
+        ]
+        return OffreVille(
+            etablissement=nom,
+            public=bool(etab and etab.secteur == "Publics"),
+            apprentissage=any(o.apprentissage for o in offres),
+            urls=tuple(
+                fm.URL_FICHE.format(code=o.code) for o in sorted(offres, key=lambda o: o.code)
+            ),
+            insertion=locaux[0] if locaux else None,
+        )
+
+    groupes: dict[str, list[FormationVille]] = defaultdict(list)
+    for i, etabs in par_mention.items():
+        mention = index.mentions[i]
         corresp = metiers.mentions.get(mention.libelle) if metiers else None
         groupes[index.types[mention.type]].append(
             FormationVille(
                 mention=mention.libelle,
-                etablissement=etab.nom if etab else o.uai,
-                public=bool(etab and etab.secteur == "Publics"),
-                apprentissage=o.apprentissage,
-                url=fm.URL_FICHE.format(code=o.code),
+                offres=tuple(offre_ville(nom, o) for nom, o in sorted(etabs.items())),
                 metiers=tuple(metiers.metiers[c] for c in corresp.romes)
                 if metiers and corresp
                 else (),
+                insertion_nationale=nationale.get(i),
             )
         )
     return sorted(
-        (
-            (t, sorted(f, key=lambda x: (fm.normaliser(x.mention), x.etablissement)))
-            for t, f in groupes.items()
-        ),
-        key=lambda g: (-len(g[1]), g[0]),
+        ((t, sorted(f, key=lambda x: fm.normaliser(x.mention))) for t, f in groupes.items()),
+        key=lambda g: (-sum(len(f.offres) for f in g[1]), g[0]),
     )
 
 
@@ -302,6 +353,7 @@ def generer(
     base_url: str,
     formations: fm.IndexFormations | None = None,
     metiers: mt.IndexMetiers | None = None,
+    insertion: ins.IndexInsertion | None = None,
 ) -> list[Path]:
     """Écrit le site dans `sortie` et renvoie les pages produites."""
     base_url = base_url.rstrip("/")
@@ -328,6 +380,7 @@ def generer(
         "total": len(villes),
         "session_formations": formations.session if formations else None,
         "source_metiers": metiers.source if metiers else None,
+        "insertion": insertion is not None,
     }
 
     pages = [sortie / "index.html"]
@@ -348,7 +401,7 @@ def generer(
                 racine="../../",
                 v=v,
                 proches=[(o, distance_km(v, o)) for o in proches],
-                formations=formations_par_type(formations, v.p.code_insee, metiers),
+                formations=formations_par_type(formations, v.p.code_insee, metiers, insertion),
                 **commun,
             ),
             encoding="utf-8",
@@ -407,12 +460,20 @@ def main() -> None:
     parser.add_argument("--sortie", type=Path, default=Path("dist/site"))
     parser.add_argument("--formations", type=Path, default=Path("web/data/formations.json"))
     parser.add_argument("--metiers", type=Path, default=Path("web/data/metiers.json"))
+    parser.add_argument("--insertion", type=Path, default=Path("web/data/insertion.json"))
     parser.add_argument("--base-url", default="https://explora.app")
     args = parser.parse_args()
     index = fm.charger(args.formations) if args.formations.exists() else None
     index_metiers = mt.charger(args.metiers) if args.metiers.exists() else None
+    index_insertion = ins.charger(args.insertion) if args.insertion.exists() else None
     pages = generer(
-        charger(args.donnees), args.web, args.sortie, args.base_url, index, index_metiers
+        charger(args.donnees),
+        args.web,
+        args.sortie,
+        args.base_url,
+        index,
+        index_metiers,
+        index_insertion,
     )
     print(f"{len(pages)} pages écrites dans {args.sortie}")
 

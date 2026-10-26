@@ -100,7 +100,9 @@
       {% endfor %}
     </ul>
     {% if formations %}
-    {% set nb = formations|map(attribute=1)|map("length")|sum %}
+    {% set nb = namespace(n=0) %}
+    {% for _, liste in formations %}{% for f in liste %}{% for o in f.offres %}{% set nb.n = nb.n + o.urls|length %}{% endfor %}{% endfor %}{% endfor %}
+    {% set nb = nb.n %}
     <div class="formations" id="formations">
       <div class="formations-tete">
         <h3>{{ nb|nombre }} formation{{ "s" if nb > 1 }} après le bac à {{ p.nom }}</h3>
@@ -108,24 +110,42 @@
         <input id="filtre-formations" type="search" placeholder="Filtrer : infirmier, tourisme, droit…" autocomplete="off">
       </div>
       {% for type_, liste in formations %}
+      {% set total_type = namespace(n=0) %}
+      {% for f in liste %}{% for o in f.offres %}{% set total_type.n = total_type.n + o.urls|length %}{% endfor %}{% endfor %}
+      {% set total_type = total_type.n %}
       <details{% if loop.first and formations|length <= 3 %} open{% endif %}>
-        <summary><span>{{ type_ }}</span><small>{{ liste|length }}</small></summary>
+        <summary><span>{{ type_ }}</span><small>{{ total_type }}</small></summary>
         <ul>
           {% for f in liste %}
-          <li>
-            <a href="{{ f.url }}" rel="noopener" target="_blank">{{ f.mention }}</a>
-            <span class="etab">{{ f.etablissement }}</span>
-            <span class="tags">{{ "public" if f.public else "privé" }}{% if f.apprentissage %} · apprentissage possible{% endif %}</span>
+          <li data-n="{{ f.offres|map(attribute="urls")|map("length")|sum }}">
+            <strong class="mention">{{ f.mention }}</strong>
             {% if f.metiers %}
             <span class="metiers">Métiers visés : {{ f.metiers[:4]|join(", ") }}{% if f.metiers|length > 4 %}…{% endif %}</span>
             {% endif %}
+            {% if f.insertion_nationale %}
+            <span class="devenir" title="Moyenne nationale du diplôme, promotion {{ f.insertion_nationale.promo }}">Après le diplôme, en France : {{ f.insertion_nationale|devenir }}</span>
+            {% endif %}
+            <ul class="etabs">
+              {% for o in f.offres %}
+              <li>
+                <a href="{{ o.urls[0] }}" rel="noopener" target="_blank">{{ o.etablissement }}</a>
+                {% if o.urls|length > 1 %}
+                <span class="parcours">{{ o.urls|length }} parcours :{% for u in o.urls %} <a href="{{ u }}" rel="noopener" target="_blank" aria-label="Parcours {{ loop.index }} à {{ o.etablissement }}">{{ loop.index }}</a>{% endfor %}</span>
+                {% endif %}
+                <span class="tags">{{ "public" if o.public else "privé" }}{% if o.apprentissage %} · apprentissage possible{% endif %}</span>
+                {% if o.insertion %}
+                <span class="devenir" title="Diplômés de l'établissement, promotion {{ o.insertion.promo }}">Après le diplôme : {{ o.insertion|devenir }}</span>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
           </li>
           {% endfor %}
         </ul>
       </details>
       {% endfor %}
       <p class="aucune" hidden>Aucune formation ne correspond à ce filtre.</p>
-      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.{% if source_metiers %} Les métiers visés viennent de la fiche du diplôme au répertoire national des certifications ; les formations généralistes (prépas, écoles d'ingénieurs, PASS) n'y sont pas rattachées.{% endif %}</p>
+      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.{% if source_metiers %} Les métiers visés viennent de la fiche du diplôme au répertoire national des certifications ; les formations généralistes (prépas, écoles d'ingénieurs, PASS) n'y sont pas rattachées.{% endif %}{% if insertion %} Le devenir des diplômés vient d'InserSup (ministère de l'Enseignement supérieur) pour les diplômes du supérieur et d'InserJeunes (ministère de l'Éducation nationale) pour les BTS : part qui poursuit ses études, puis part en emploi 12 mois après la sortie parmi ceux qui ont arrêté, et salaire net médian quand il est publié. Faute de chiffre pour l'établissement, la moyenne nationale du diplôme est indiquée.{% endif %}</p>
     </div>
     {% endif %}
   </section>
@@ -181,6 +201,9 @@
       {% endfor %}
       {% if session_formations %}
       <li>Cartographie des formations post-bac, MESR, session {{ session_formations }} (Licence Ouverte 2.0)</li>
+      {% endif %}
+      {% if insertion %}
+      <li>Devenir des diplômés : InserSup, MESR, et InserJeunes, DEPP (Licence Ouverte 2.0)</li>
       {% endif %}
       {% if source_metiers %}
       <li>Métiers visés : Répertoire national des certifications professionnelles, France Compétences ({{ source_metiers }}, Licence Ouverte 2.0), codes ROME de France Travail</li>

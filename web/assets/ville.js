@@ -15,8 +15,8 @@
         ouvert: d.open,
         compte: d.querySelector("summary small"),
         total: d.querySelector("summary small").textContent,
-        lignes: Array.prototype.map.call(d.querySelectorAll("li"), function (li) {
-          return { li: li, texte: normaliser(li.textContent + " " + d.querySelector("summary span").textContent) };
+        lignes: Array.prototype.map.call(d.querySelectorAll("li[data-n]"), function (li) {
+          return { li: li, n: Number(li.dataset.n), texte: normaliser(li.textContent + " " + d.querySelector("summary span").textContent) };
         })
       };
     });
@@ -28,7 +28,7 @@
         g.lignes.forEach(function (l) {
           var ok = mots.every(function (m) { return l.texte.indexOf(m) !== -1; });
           l.li.hidden = !ok;
-          if (ok) vus++;
+          if (ok) vus += l.n;
         });
         g.d.hidden = vus === 0;
         g.compte.textContent = mots.length ? vus + " / " + g.total : g.total;
