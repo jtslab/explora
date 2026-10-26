@@ -139,8 +139,9 @@ def ecrire(export: ExportVilles, chemin: Path) -> None:
 
 
 def slugifier(texte: str) -> str:
-    """« Saint-Étienne » → « saint-etienne », « L'Haÿ-les-Roses » → « l-hay-les-roses »."""
-    ascii_ = unicodedata.normalize("NFKD", texte).encode("ascii", "ignore").decode()
+    """« Saint-Étienne » → « saint-etienne », « Vandœuvre-lès-Nancy » → « vandoeuvre-les-nancy »."""
+    ligatures = texte.replace("œ", "oe").replace("Œ", "Oe").replace("æ", "ae").replace("Æ", "Ae")
+    ascii_ = unicodedata.normalize("NFKD", ligatures).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", ascii_.lower()).strip("-")
 
 

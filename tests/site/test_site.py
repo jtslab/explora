@@ -59,6 +59,7 @@ def export() -> ExportVilles:
 def test_slugs() -> None:
     assert slugifier("L'Haÿ-les-Roses") == "l-hay-les-roses"
     assert slugifier("Saint-Étienne") == "saint-etienne"
+    assert slugifier("Schœlcher") == "schoelcher"
 
 
 def test_slugs_homonymes(export: ExportVilles) -> None:
