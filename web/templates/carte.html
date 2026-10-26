@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block titre %}Villes étudiantes en France : carte des loyers, des études et de la vie étudiante | Explora{% endblock %}
+{% block description %}Comparez {{ total }} villes étudiantes françaises sur la carte : études, budget logement, vie étudiante, mobilité. Réglez vous-même l'importance de chaque critère.{% endblock %}
+{% block canonique %}{{ base_url }}/{% endblock %}
+{% block contenu %}
+<main class="appli">
+  <aside class="panneau" aria-label="Réglages et classement">
+    <div>
+      <h1>Où faire ses études, où se loger&nbsp;?</h1>
+      <p class="chapo">{{ total }} villes qui accueillent au moins une formation après le bac, notées sur quatre axes. Réglez ce qui compte pour vous, la carte se recolore.</p>
+    </div>
+
+    <div class="recherche">
+      <label class="bloc-titre" for="recherche">Chercher une ville</label>
+      <input id="recherche" type="search" placeholder="Rennes, Pau, Saint-Denis…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="suggestions">
+      <ul id="suggestions" role="listbox" hidden></ul>
+    </div>
+
+    <fieldset class="poids">
+      <legend class="bloc-titre">Ce qui compte pour vous</legend>
+      {% set aides = {
+        "etudes": "Nombre d'étudiants, d'établissements et de filières.",
+        "budget": "Loyer et prix au m², tension sur le logement étudiant.",
+        "vie": "Commerces, culture et sport pour 1 000 habitants, dynamisme commercial.",
+        "mobilite_cadre": "Transports en commun, vélos en libre-service, air, risques naturels.",
+      } %}
+      {% for axe, libelle in AXES.items() %}
+      <label for="poids-{{ axe.value }}">
+        <span>{{ libelle }}</span>
+        <output id="sortie-{{ axe.value }}" for="poids-{{ axe.value }}">normal</output>
+        <input id="poids-{{ axe.value }}" type="range" min="0" max="4" step="1" value="2" data-axe="{{ axe.value }}">
+        <small>{{ aides[axe.value] }}</small>
+      </label>
+      {% endfor %}
+      <button type="button" class="lien-bouton" id="reinitialiser">Revenir à des poids égaux</button>
+    </fieldset>
+
+    <div class="legende" aria-hidden="true">
+      <p class="bloc-titre">Classement avec vos réglages</p>
+      <div class="rampe"></div>
+      <div class="bornes"><span>Moins bien placées</span><span>Mieux placées</span></div>
+      <span>Taille du point : nombre d'étudiants inscrits.</span>
+    </div>
+
+    <section aria-labelledby="titre-classement">
+      <h2 class="bloc-titre" id="titre-classement">Les 10 premières avec vos réglages</h2>
+      <ol class="classement" id="classement"></ol>
+    </section>
+
+    <section class="avertissement" id="methode" aria-labelledby="titre-methode">
+      <h2 class="bloc-titre" id="titre-methode">Méthode et limites</h2>
+      <p>Chaque indicateur est classé parmi les {{ total }} villes (rang centile), puis moyenné par axe. Le score est la moyenne des axes, pondérée par vos réglages. Il compare les villes entre elles et ne mesure rien dans l'absolu.</p>
+      <p>Les loyers sont des estimations à l'échelle de la commune, pas du quartier. Le rendement locatif affiché est indicatif et ne constitue pas un conseil en investissement.</p>
+      <p>Explora est un outil indépendant, sans lien avec les organismes publics dont il réutilise les données ouvertes.</p>
+      {% if meta.demo %}
+      <p><strong>Maquette&nbsp;:</strong> seuls les effectifs étudiants et les formations sont réels. Les autres chiffres sont fictifs.</p>
+      {% endif %}
+    </section>
+
+    <details class="toutes">
+      <summary>Toutes les villes, par département</summary>
+      <div class="departements">
+        {% for (code, nom), villes in par_departement.items() %}
+        <ul>
+          <li><h3>{{ nom }} ({{ code }})</h3></li>
+          {% for v in villes %}
+          <li><a href="villes/{{ v.slug }}/">{{ v.p.nom }}</a></li>
+          {% endfor %}
+        </ul>
+        {% endfor %}
+      </div>
+    </details>
+  </aside>
+
+  <div class="carte-zone">
+    <div id="carte" role="region" aria-label="Carte des villes étudiantes"></div>
+    <div class="outremer" aria-label="Aller en outre-mer">
+      <button type="button" data-vue="metropole">Métropole</button>
+      <button type="button" data-vue="971">Guadeloupe</button>
+      <button type="button" data-vue="972">Martinique</button>
+      <button type="button" data-vue="973">Guyane</button>
+      <button type="button" data-vue="974">La Réunion</button>
+      <button type="button" data-vue="976">Mayotte</button>
+    </div>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ racine }}assets/carte.js"></script>
+{% endblock %}

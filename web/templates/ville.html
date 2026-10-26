@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% set p = v.p %}
+{% set i = p.indicateurs %}
+{% set lieu = p.nom ~ " (" ~ p.code_departement ~ ")" %}
+{% block titre %}Logement étudiant à {{ p.nom }} : loyers, prix, vie étudiante | Explora{% endblock %}
+{% block description %}{{ p.nom }} ({{ p.departement }}) : {{ p.effectif_etudiants|nombre }} étudiants, loyer estimé {{ i.loyer_m2|nombre(1, "€/m²") }}, prix {{ i.prix_m2|nombre(0, "€/m²") }}, formations, transports et vie étudiante. Score sur 4 axes et comparaison avec {{ total - 1 }} autres villes.{% endblock %}
+{% block canonique %}{{ base_url }}/villes/{{ v.slug }}/{% endblock %}
+
+{% macro demo(id) %}{% if id in p.indicateurs_demo %}<span class="demo" title="Valeur fictive, en attendant les vraies données">démo</span>{% endif %}{% endmacro %}
+{% macro chiffre(id, libelle, valeur, aide="") %}
+<div class="chiffre">
+  <span class="lib">{{ libelle }} {{ demo(id) }}</span>
+  <span class="val">{{ valeur }}</span>
+  {% if aide %}<span class="aide">{{ aide }}</span>{% endif %}
+</div>
+{% endmacro %}
+{% macro entete_axe(axe, titre) %}
+<header>
+  <h2 id="{{ axe.value }}">{{ titre }}</h2>
+  {% set note = p.axes.note(axe) %}
+  <span class="note" style="{{ note|teinte }}" title="Note de l'axe, de 0 à 100">{{ note|nombre if note is not none else "n.d." }}<span style="opacity:.7">/100</span></span>
+</header>
+{% endmacro %}
+
+{% block tete %}
+<script type="application/ld+json">{{ {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Villes étudiantes", "item": base_url ~ "/"},
+    {"@type": "ListItem", "position": 2, "name": p.nom, "item": base_url ~ "/villes/" ~ v.slug ~ "/"}
+  ]
+}|tojson }}</script>
+<script type="application/ld+json">{{ {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faq_jsonld(v)
+}|tojson }}</script>
+{% endblock %}
+
+{% block contenu %}
+<main class="fiche">
+  <div class="entete">
+    <div>
+      <nav class="ariane" aria-label="Fil d'Ariane">
+        <a href="{{ racine }}">Carte des villes étudiantes</a><span aria-hidden="true">›</span>
+        <span>{{ p.departement }}</span><span aria-hidden="true">›</span>
+        <span aria-current="page">{{ p.nom }}</span>
+      </nav>
+      <h1>Logement étudiant à {{ p.nom }}<span class="vh"> : </span><span>loyers, prix, vie étudiante</span></h1>
+      <p class="resume">{{ resume(v, total) }}</p>
+    </div>
+    <div class="minicarte" id="minicarte" data-lon="{{ v.lon }}" data-lat="{{ v.lat }}" role="img" aria-label="Situation de {{ p.nom }} sur la carte"></div>
+  </div>
+
+  <section class="synthese" aria-label="Score de la ville">
+    <div class="cadran">
+      <span class="valeur">{{ p.score|nombre if p.score is not none else "n.d." }}<small>/100</small></span>
+      <span class="jauge" aria-hidden="true"><i style="left: {{ p.score or 0 }}%"></i></span>
+      <span class="pied">{% if v.rang %}{{ v.rang }}<sup>{{ "re" if v.rang == 1 else "e" }}</sup> sur {{ total }} villes, poids égaux{% else %}Score non calculé{% endif %}</span>
+    </div>
+    <div class="barres">
+      {% for axe, libelle in AXES.items() %}
+      {% set note = p.axes.note(axe) %}
+      <a class="barre" href="#{{ axe.value }}" style="color: inherit; text-decoration: none">
+        <span>{{ libelle }}</span>
+        <span class="piste"><i style="width: {{ note or 0 }}%"></i></span>
+        <b>{{ note|nombre if note is not none else "n.d." }}</b>
+      </a>
+      {% endfor %}
+      <p class="aide" style="margin: 4px 0 0; font-size: 12.5px; color: var(--discret)">Notes relatives aux {{ total }} villes comparées. Données couvrant {{ p.couverture|pourcent(0) }} du score. <a href="{{ racine }}">Changer l'importance des axes sur la carte</a>.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="budget">
+    {{ entete_axe(AXES_ENUM.BUDGET, "Budget : loyers et prix à " ~ p.nom) }}
+    <div class="chiffres-cles">
+      {{ chiffre("loyer_m2", "Loyer moyen estimé", i.loyer_m2|nombre(1, "€/m²"), "Par mois, charges comprises, logement non meublé.") }}
+      {{ chiffre("loyer_m2", "Studio de " ~ STUDIO_M2 ~ " m²", (i.loyer_m2 * STUDIO_M2)|nombre(0, "€/mois") if i.loyer_m2 is not none else "n.d.", "Ordre de grandeur, hors aides au logement.") }}
+      {{ chiffre("prix_m2", "Prix d'achat médian", i.prix_m2|nombre(0, "€/m²"), "Ventes " ~ (p.details.prix_m2_annee or "récentes") ~ ", " ~ TYPOLOGIES.get(p.details.prix_m2_typologie, "appartements") ~ ".") }}
+      {{ chiffre("rendement_brut", "Rendement locatif brut", i.rendement_brut|pourcent(1), "Loyer annuel ÷ prix d'achat, avant charges, taxes et vacance.") }}
+      {{ chiffre("tension_locative", "Tension locative", i.tension_locative|nombre(1), TENSIONS.get(p.details.tension_methode, "Étudiants par logement étudiant.")) }}
+    </div>
+    <div class="encadre">
+      <p>Les loyers sont des <strong>estimations à l'échelle de la commune</strong>, pas du quartier&nbsp;: un studio près du campus ou de la gare peut coûter nettement plus.</p>
+      <p>Le rendement est <strong>indicatif</strong> et ne constitue pas un conseil en investissement.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="etudes">
+    {{ entete_axe(AXES_ENUM.ETUDES, "Études à " ~ p.nom) }}
+    <div class="chiffres-cles">
+      {{ chiffre("effectifs_etudiants", "Étudiants inscrits", p.effectif_etudiants|nombre, "Toutes formations après le bac, BTS et prépas des lycées compris.") }}
+      {{ chiffre("nb_etablissements", "Établissements", i.nb_etablissements|nombre) }}
+      {{ chiffre("nb_filieres", "Types de formation", i.nb_filieres|nombre) }}
+    </div>
+    <ul class="etiquettes" aria-label="Formations présentes">
+      {% for f in p.formations %}
+      <li>{{ FORMATIONS.get(f, f) }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="vie">
+    {{ entete_axe(AXES_ENUM.VIE, "Vie étudiante") }}
+    <div class="chiffres-cles">
+      {{ chiffre("commerces_pour_1000", "Commerces et cafés", i.commerces_pour_1000|nombre(1), "Pour 1 000 habitants.") }}
+      {{ chiffre("equipements_culture_sport_pour_1000", "Culture et sport", i.equipements_culture_sport_pour_1000|nombre(1), "Équipements pour 1 000 habitants.") }}
+      {{ chiffre("vitalite_commerciale", "Vitalité commerciale", ("+" if (i.vitalite_commerciale or 0) > 0 else "") ~ i.vitalite_commerciale|nombre, "Créations moins fermetures d'établissements sur 3 ans.") }}
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="mobilite_cadre">
+    {{ entete_axe(AXES_ENUM.MOBILITE_CADRE, "Mobilité et cadre de vie") }}
+    <div class="chiffres-cles">
+      {{ chiffre("arrets_transport_pour_1000", "Arrêts de transport en commun", i.arrets_transport_pour_1000|nombre(1), "Pour 1 000 habitants.") }}
+      {{ chiffre("stations_velo", "Stations de vélos partagés", i.stations_velo|nombre) }}
+      {{ chiffre("indice_qualite_air", "Qualité de l'air", i.indice_qualite_air|nombre(1), "Indice moyen, de 1 (bon) à 6 (extrêmement mauvais).") }}
+      {{ chiffre("nb_risques", "Risques recensés", i.nb_risques|nombre, p.risques|join(", ")) }}
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="questions">
+    <header><h2 id="questions">Questions fréquentes</h2></header>
+    <div class="faq">
+      {% for q, r in faq(v) %}
+      <details{% if loop.first %} open{% endif %}>
+        <summary>{{ q }}</summary>
+        <p>{{ r }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="proches">
+    <header><h2 id="proches">Villes étudiantes proches</h2></header>
+    <div class="proches">
+      {% for o, km in proches %}
+      <a href="{{ racine }}villes/{{ o.slug }}/">
+        <span class="ligne"><strong>{{ o.p.nom }}</strong><span class="note" style="{{ o.centile|teinte }}">{{ o.p.score|nombre if o.p.score is not none else "n.d." }}</span></span>
+        <small>{{ km|nombre }} km · {{ o.p.effectif_etudiants|nombre }} étudiants</small>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="sources" aria-labelledby="sources">
+    <h2 class="bloc-titre" id="sources">Sources et avertissements</h2>
+    <ul>
+      {% for s in meta.sources %}
+      <li>{{ s.attribution }} ({{ s.licence }})</li>
+      {% endfor %}
+      <li>Fond de carte © IGN, Géoplateforme.</li>
+    </ul>
+    <p>Explora est un outil indépendant, sans lien avec les organismes publics dont il réutilise les données ouvertes. Données mises à jour le {{ meta.genere_le.strftime("%d/%m/%Y") }}.</p>
+    {% if meta.demo %}
+    <p><strong>Maquette&nbsp;:</strong> les valeurs marquées <span class="demo">démo</span> sont fictives. Les effectifs et les formations sont réels.</p>
+    {% endif %}
+  </section>
+</main>
+<footer class="pied-page">Explora · outil indépendant · données publiques ouvertes · <a href="https://github.com/jtslab/explora">code source</a></footer>
+{% endblock %}
+{% block scripts %}
+<script src="{{ racine }}assets/ville.js"></script>
+{% endblock %}
