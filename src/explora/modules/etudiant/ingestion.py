@@ -135,6 +135,7 @@ _ARRONDISSEMENT = re.compile(r"\s+\d+\s*(?:er|e|eme)?\s+arrondissement$")
 def normaliser_nom(nom: str) -> str:
     """`Saint-Étienne` -> `saint etienne` ; `Paris  5e  Arrondissement` -> `paris`."""
     texte = re.sub(r"[-'\u2019]", " ", nom.lower())
+    texte = texte.replace("\u0153", "oe").replace("\u00e6", "ae")  # ligatures œ, æ
     texte = unicodedata.normalize("NFKD", texte).encode("ascii", "ignore").decode()
     texte = " ".join(texte.split())
     texte = _ARRONDISSEMENT.sub("", texte)
@@ -414,9 +415,15 @@ async def _formations_par_ville(
     sources: Sources, villes: Sequence[Ville]
 ) -> dict[str, list[FormationVoeux]] | None:
     deps = sorted({v.code_departement for v in villes})
-    resultats = await asyncio.gather(
-        *(sources.essayer("voeux-formations", sources.voeux.formations(d)) for d in deps)
-    )
+    # Un département = une dizaine de pages lues à la suite : tous en même temps, ils
+    # épuisent le pool de connexions avant que le serveur, lent, ne réponde.
+    limite = asyncio.Semaphore(4)
+
+    async def departement(code: str) -> list[FormationVoeux] | None:
+        async with limite:
+            return await sources.essayer("voeux-formations", sources.voeux.formations(code))
+
+    resultats = await asyncio.gather(*(departement(d) for d in deps))
     if all(r is None for r in resultats):
         return None
     formations = [f for r in resultats if r for f in r]

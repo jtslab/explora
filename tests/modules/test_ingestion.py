@@ -99,6 +99,7 @@ def test_lire_villes_du_depot() -> None:
         ("Paris  5e  Arrondissement", "paris"),
         ("Marseille 1er Arrondissement", "marseille"),
         ("Ste-Clotilde", "sainte clotilde"),
+        ("Vand\u0153uvre-lès-Nancy", "vandoeuvre les nancy"),
     ],
 )
 def test_normaliser_nom(brut: str, attendu: str) -> None:

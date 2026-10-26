@@ -75,6 +75,22 @@ l'axe Mobilité & cadre ne repose pour l'instant que sur les risques.
   adaptateur à écrire.
 - `indice_qualite_air` : Atmo France exige un compte.
 
+## Premier passage (26/10/2026)
+
+Sur 400 villes : loyer 396 (pas de loyer à Mayotte), prix au m² 343 (studios 225,
+tous appartements 118 ; 57 villes sous le secret statistique ou sans vente d'appartement),
+formations 377, tension locative 396 (91 calculées sur les places en résidence),
+équipements et risques 400. Manquent les formations :
+
+- des Alpes-Maritimes (Nice, Antibes, Cannes...), dont les pages sont refusées par la
+  passerelle réseau de l'environnement de développement à chaque tentative alors que les
+  autres départements passent ; à vérifier au premier passage du workflow ;
+- des communes sans formation sur la plateforme (Jouy-en-Josas, La Tronche, Sevenans...),
+  dont les étudiants sont en master, en école ou en santé.
+
+Le rendement brut médian est de 7,3 % (2,9 % à 31 %) : les valeurs extrêmes viennent de
+petites villes où le prix médian porte sur peu de ventes (voir `details.prix_m2_nb_ventes`).
+
 ## Stockage
 
 Étape intermédiaire : le résultat est un GeoJSON versionné dans le dépôt, servi tel quel
