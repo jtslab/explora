@@ -5,13 +5,7 @@ import io
 
 from explora.core.adapter import SourceAdapter, SourceInfo
 from explora.core.models import LoyerCommune
-
-# Paris, Lyon et Marseille ne sont publiés qu'à l'arrondissement (75101...75120, etc.).
-ARRONDISSEMENTS_PLM = {
-    "75056": ("Paris", "751"),
-    "69123": ("Lyon", "6938"),
-    "13055": ("Marseille", "132"),
-}
+from explora.core.plm import ARRONDISSEMENTS_PLM
 
 
 def _num(value: str | None) -> float | None:

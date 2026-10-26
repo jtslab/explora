@@ -93,3 +93,23 @@ class LogementsCommune(BaseModel):
     residences_principales: float | None = None
     locataires: float | None = None
     locataires_meubles: float | None = None
+
+
+class EffectifCommune(BaseModel):
+    """Étudiants inscrits dans une commune pour un regroupement de formations (atlas MESR)."""
+
+    code_insee: str
+    """Code publié par la source : arrondissement pour Paris, Lyon et Marseille."""
+    nom: str
+    code_departement: str
+    unite_urbaine: str | None = None
+    regroupement: str
+    """`TOTAL`, `UNIV`, `STS`, `CPGE`, `ING_autres`, `EC_COM`..."""
+    effectif: int
+
+
+class Departement(BaseModel):
+    code: str
+    nom: str
+    chef_lieu: str
+    """Code INSEE de la préfecture."""
