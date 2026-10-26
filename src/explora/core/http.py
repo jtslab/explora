@@ -110,14 +110,27 @@ class SourceClient:
         await self._cache.set(key, data, self._cache_ttl_s)
         return data
 
-    async def get_text(self, path: str, params: Params | None = None) -> str:
-        """GET texte brut (CSV...) avec cache."""
+    async def get_text(
+        self, path: str, params: Params | None = None, *, fallback_encoding: str | None = None
+    ) -> str:
+        """GET texte brut (CSV...) avec cache.
+
+        Le contenu est décodé en UTF-8 (BOM retiré). Certains fichiers publics sont
+        servis en `charset=utf-8` alors qu'ils sont encodés en Windows-1252 : avec
+        `fallback_encoding`, on se rabat sur cet encodage si l'UTF-8 échoue.
+        """
         key = "text:" + self._cache_key(path, params)
         cached = await self._cache.get(key)
         if cached is not None:
             return str(cached)
         response = await self._request("GET", path, params)
-        text = response.text
+        try:
+            text = response.content.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            if fallback_encoding is None:
+                text = response.text
+            else:
+                text = response.content.decode(fallback_encoding)
         await self._cache.set(key, text, self._cache_ttl_s)
         return text
 

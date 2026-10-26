@@ -1,4 +1,4 @@
-"""Les réponses simulées reprennent le format documenté de geo.api.gouv.fr."""
+"""Réponses simulées : format réel de geo.api.gouv.fr (voir `tests/fixtures`)."""
 
 from collections.abc import Callable
 
@@ -6,16 +6,9 @@ import respx
 
 from explora.adapters.geo_api import GeoApiAdapter
 from explora.core.http import SourceClient
+from tests.conftest import fixture_json
 
-RENNES = {
-    "nom": "Rennes",
-    "code": "35238",
-    "codeDepartement": "35",
-    "codeRegion": "53",
-    "codesPostaux": ["35000", "35200", "35700"],
-    "population": 225081,
-    "centre": {"type": "Point", "coordinates": [-1.6743, 48.112]},
-}
+RENNES = fixture_json("geo_api_commune_35238.json")
 
 
 @respx.mock
@@ -26,7 +19,8 @@ async def test_commune(make_client: Callable[..., SourceClient]) -> None:
     assert commune.nom == "Rennes"
     assert commune.code_departement == "35"
     assert commune.centre is not None
-    assert commune.centre.lat == 48.112
+    assert commune.centre.lat == 48.1159
+    assert commune.codes_postaux == ["35000", "35200", "35700"]
 
 
 @respx.mock

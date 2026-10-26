@@ -1,4 +1,7 @@
+import json
 from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -32,3 +35,15 @@ def make_client(clock: FakeClock) -> Callable[..., SourceClient]:
         return SourceClient("test", base_url, sleep=clock.sleep, **kwargs)  # type: ignore[arg-type]
 
     return factory
+
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def fixture_bytes(name: str) -> bytes:
+    """Réponse réelle enregistrée (voir `tests/fixtures/README.md`)."""
+    return (FIXTURES / name).read_bytes()
+
+
+def fixture_json(name: str) -> Any:
+    return json.loads(fixture_bytes(name))

@@ -31,6 +31,8 @@ class GeocodeResult(BaseModel):
 class RisqueCommune(BaseModel):
     code_insee: str
     risques: list[str]
+    """Familles de risques (Inondation, Séisme...) : base de l'indicateur `nb_risques`."""
+    sous_risques: list[str] = Field(default_factory=list)
 
 
 class LoyerCommune(BaseModel):

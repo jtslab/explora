@@ -1,4 +1,4 @@
-"""Réponse GeoJSON au format documenté du géocodeur de la Géoplateforme."""
+"""Réponse GeoJSON réelle du géocodeur de la Géoplateforme (voir `tests/fixtures`)."""
 
 from collections.abc import Callable
 
@@ -6,24 +6,9 @@ import respx
 
 from explora.adapters.geocodage import GeocodageAdapter
 from explora.core.http import SourceClient
+from tests.conftest import fixture_json
 
-REPONSE = {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [-1.6778, 48.1173]},
-            "properties": {
-                "label": "Rennes",
-                "score": 0.97,
-                "type": "municipality",
-                "citycode": "35238",
-                "city": "Rennes",
-                "postcode": "35000",
-            },
-        }
-    ],
-}
+REPONSE = fixture_json("geocodage_search_rennes.json")
 
 
 @respx.mock
@@ -34,7 +19,8 @@ async def test_search(make_client: Callable[..., SourceClient]) -> None:
     assert route.calls.last.request.url.params["type"] == "municipality"
     assert "citycode" not in route.calls.last.request.url.params
     assert results[0].code_insee == "35238"
-    assert results[0].point.lon == -1.6778
+    assert results[0].point.lon == -1.68365
+    assert results[0].code_postal == "35000"
 
 
 @respx.mock

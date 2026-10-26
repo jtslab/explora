@@ -73,6 +73,7 @@ Prérequis : [uv](https://docs.astral.sh/uv/) et Docker.
 cp .env.example .env
 uv sync
 uv run pytest                 # tests, toutes les API sont simulées
+uv run pytest -m live         # appels réels aux API publiques (réseau requis)
 uv run uvicorn explora.api.main:app --reload
 # ou, avec PostGIS :
 docker compose up --build
