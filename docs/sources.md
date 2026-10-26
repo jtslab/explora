@@ -1,6 +1,6 @@
 # Sources de données
 
-État au 25/10/2026, après des appels réels depuis l'environnement cloud (`uv run pytest -m live`
+État au 26/10/2026, après des appels réels depuis l'environnement cloud (`uv run pytest -m live`
 pour les sources qui ont un adaptateur). « OK » = appel réel réussi et format vérifié.
 
 | Axe | Source | Accès | Clé | Appel réel | Adaptateur |
@@ -10,17 +10,18 @@ pour les sources qui ont un adaptateur). « OK » = appel réel réussi et forma
 | Études | Effectifs d'étudiants inscrits (atlas régional, MESR) | API Opendatasoft `data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-atlas_regional-effectifs-d-etudiants-inscrits_agregeables/records` | non | OK : millésimes jusqu'à 2025-26, 1 584 communes avec étudiants en 2024-25, BTS inclus | à faire |
 | Études | Principaux établissements (MESR) | même API, jeu `fr-esr-principaux-etablissements-enseignement-superieur` | non | OK, mais seulement 245 grands établissements (pas les lycées à BTS) | à faire |
 | Études | Cartographie des formations Parcoursup | même API, jeu `fr-esr-cartographie_formations_parcoursup` (157 497 lignes, commune + type de formation) | non | OK | à faire |
-| Études | Vœux Parcoursup 2025 | `data.education.gouv.fr`, jeu `fr-esr-parcoursup` | non | **bloqué** par la politique réseau de l'environnement | à faire |
+| Études | Vœux Parcoursup 2025 | API Opendatasoft `data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-parcoursup/records` (14 252 formations, session 2025) | non | OK : capacité, vœux, admis, filière, coordonnées ; **pas de code INSEE** | `voeux_formations` (test live) |
 | Études | InserSup | même API MESR, jeu `fr-esr-insersup` | non | OK | à faire |
 | Budget | Carte des loyers 2025 (ANIL) | 4 CSV sur [data.gouv.fr](https://www.data.gouv.fr/datasets/693aa2feed1bf4da603faa49/) : appartement, T1-T2, T3+, maison | non | OK (voir encodage et Paris/Lyon/Marseille) | `loyers` (test live) |
 | Budget | DVF (Cerema, API Données foncières) | `apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=&codtypbien=121&anneemut_min=` | non | OK (lent, ~1,3 s) | à faire |
-| Budget | Logements étudiants (CNOUS) | [data.gouv.fr](https://www.data.gouv.fr/datasets/logements-etudiants/) : 26 flux XML sur `webservices-v2.crous-mobile.fr` | non | métadonnées OK, flux XML **bloqués** (domaine non autorisé, HTTP et port 8080) | à faire |
-| Vie | BPE 2025 (INSEE) | ZIP `www.insee.fr/fr/statistiques/fichier/8217527/DS_BPE_CSV_FR.zip` (14 Mo, 150 Mo décompressé) | non | OK | à faire |
+| Budget | Logements étudiants (CNOUS) | [data.gouv.fr](https://www.data.gouv.fr/datasets/logements-etudiants/) : 26 flux XML `http://webservices-v2.crous-mobile.fr/feed/{flux}/{flux}-logement.xml` | non | OK en HTTP seulement : 828 résidences géolocalisées ; nombre de places **estimé** pour 496 (60 %) | `residences_etudiantes` (test live) |
+| Vie | BPE 2025 (INSEE) | API Melodi `api.insee.fr/melodi/data/DS_BPE?GEO=COM-{code}` (ou ZIP national `www.insee.fr/fr/statistiques/fichier/8217527/DS_BPE_CSV_FR.zip`, 150 Mo décompressé) | non | OK : ~200 types d'équipements par commune en un appel | `insee_melodi` (test live) |
 | Vie | API Recherche d'entreprises / SIRENE | `recherche-entreprises.api.gouv.fr/search?activite_principale=&code_commune=&etat_administratif=A\|C` | non | OK | à faire |
-| Vie | API INSEE (Melodi, Sirene) | `api.insee.fr` | selon API | **bloqué** par la politique réseau | à faire |
+| Budget | Recensement : logements par statut d'occupation (INSEE) | API Melodi `api.insee.fr/melodi/data/DS_RP_LOGEMENT_PRINC` | non | OK : résidences principales, locataires, locataires en meublé (RP 2012, 2017, 2023) | `insee_melodi` (test live) |
+| Vie | API Sirene (INSEE) | `api.insee.fr/api-sirene/3.11` | **oui** (compte portail-api.insee.fr) | HTTP 401 sans clé, comme prévu ; l'API Recherche d'entreprises suffit pour l'instant | non prévu |
 | Mobilité | transport.data.gouv.fr (GTFS, GBFS) | `transport.data.gouv.fr/api/datasets` (808 jeux, sans pagination) | non | OK | à faire |
 | Cadre | Géorisques | `https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee=` | non | OK (1 000 req/min/IP) | `georisques` (test live) |
-| Cadre | Indice ATMO (Atmo France) | `https://admindata.atmofrance.org/api/data/112/...` filtré par `code_zone` (INSEE) | **oui** : compte validé + jeton d'1 h | **bloqué** (connexion refusée par la passerelle) | à faire |
+| Cadre | Indice ATMO (Atmo France) | `https://admindata.atmofrance.org/api/data/112/...` filtré par `code_zone` (INSEE) | **oui** : compte validé + jeton d'1 h | **bloqué** : la passerelle répond 502 au CONNECT (domaine autorisé, hôte injoignable depuis l'environnement) | à faire |
 | Carte | Fonds IGN (Géoplateforme) | tuiles vectorielles `data.geopf.fr/tms/1.0.0/PLAN.IGN/{z}/{x}/{y}.pbf`, style `data.geopf.fr/annexes/ressources/vectorTiles/styles/PLAN.IGN/standard.json`, WMTS | non | OK | front |
 
 ## Écarts constatés entre la documentation et les vraies réponses
@@ -48,10 +49,22 @@ pour les sources qui ont un adaptateur). « OK » = appel réel réussi et forma
   sera plus simple à calculer depuis le stock SIRENE (fichier) que via cette API.
 - **transport.data.gouv.fr** : la zone couverte est donnée par EPCI (`covered_area.insee` = SIREN
   de l'EPCI) ; on fera la jointure avec `codeEpci` de l'API Géo.
-- **Domaines à ajouter à la politique réseau** pour lever les blocages : `data.education.gouv.fr`
-  (vœux Parcoursup), `webservices-v2.crous-mobile.fr` (résidences étudiantes), `api.insee.fr`
-  (facultatif) ; `admindata.atmofrance.org` est autorisé mais la connexion échoue (à revérifier
-  une fois le compte Atmo obtenu).
+- **Vœux Parcoursup** : pas de code commune, seulement `ville_etab` (libellé), `dep` et
+  `g_olocalisation_des_formations`. Paris est publié par arrondissement avec des espaces doublés
+  (« Paris  5e  Arrondissement ») : l'adaptateur normalise les espaces ; le rattachement à la
+  commune se fera par les coordonnées (point dans polygone, PostGIS). `count()` refuse le champ
+  géographique. Le domaine coupe encore plus de négociations TLS que les autres : les tests live
+  passent à 10 tentatives.
+- **Flux CNOUS** : data.gouv.fr annonce `http://…:8080/feed/…` pour 24 flux sur 26, mais le
+  port 8080 ne répond pas et HTTPS renvoie 404 ; seul `http://webservices-v2.crous-mobile.fr/feed/…`
+  (port 80) fonctionne, pour les 26 flux. Le XML (`<residence id title short_desc lat lon zone>`
+  + `infos` en HTML échappé, `address`…) ne contient pas de nombre de places.
+- **API INSEE** : Melodi (statistiques locales) fonctionne **sans clé** ; les autres dimensions
+  d'un jeu doivent être fixées à `_T` pour obtenir une seule série, et un paramètre répété
+  (`TSH=200&TSH=_T`) renvoie plusieurs modalités en un appel. Le code géographique revient
+  préfixé du millésime (`2026-COM-38185`). Sirene exige une clé (401).
+- **Atmo** : toujours injoignable, et une clé reste de toute façon nécessaire. À retenter une fois
+  le compte obtenu ; repli possible sur les fichiers des AASQA régionales.
 
 ## Points d'attention relevés
 
@@ -63,11 +76,15 @@ pour les sources qui ont un adaptateur). « OK » = appel réel réussi et forma
   (`TYPPRED = maille`). L'ANIL recommande la prudence si R² < 0,5 ou moins de 30
   observations : c'est la propriété `LoyerCommune.fiable`. Mention obligatoire :
   « Estimations ANIL, à partir des données du Groupe SeLoger et de leboncoin ».
-- **Places en résidence étudiante** : le jeu CNOUS liste les résidences avec leur
-  géolocalisation et leurs loyers, mais **pas de champ structuré pour le nombre de places**.
-  La tension locative telle que définie (étudiants ÷ places) demande donc soit une
-  extraction depuis les descriptions, soit un indicateur de repli (étudiants ÷ nombre de
-  résidences, ou étudiants ÷ logements locatifs du recensement INSEE).
+- **Places en résidence étudiante** : le jeu CNOUS n'a **pas de champ structuré** pour le
+  nombre de places. `residences_etudiantes` l'extrait du texte (« 171 logements », « 1074 lits »,
+  « 798 chambres ») : 496 résidences sur 828, environ 95 000 places au total. La couverture est
+  très inégale : quasi complète à Lyon, Grenoble, Nantes, Versailles, Aix-Marseille, mais
+  3 résidences sur 87 à Paris, 3 sur 48 à Lille, 0 sur 23 à Poitiers. Quand la description
+  détaille plusieurs types, seul le premier effectif est retenu (minorant).
+  Proposition pour la tension locative : afficher `étudiants ÷ places estimées` seulement si
+  toutes les résidences de la ville ont une estimation, sinon basculer sur
+  `étudiants ÷ locataires en meublé` (recensement, via Melodi), en le signalant.
 - **Qualité de l'air** : seule source nécessitant un compte ; à prévoir dans les secrets
   de la CI de déploiement, jamais dans le dépôt.
 - **Nommage** : ne pas reprendre « CROUS » ni « Parcoursup » dans les noms de produit ;

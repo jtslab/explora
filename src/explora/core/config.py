@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     geo_api_url: str = "https://geo.api.gouv.fr"
     geocodage_url: str = "https://data.geopf.fr/geocodage"
     georisques_url: str = "https://georisques.gouv.fr/api/v1"
+    voeux_formations_url: str = "https://data.education.gouv.fr/api/explore/v2.1"
+    # HTTPS renvoie 404 et le port 8080 annoncé sur data.gouv.fr ne répond pas.
+    residences_etudiantes_url: str = "http://webservices-v2.crous-mobile.fr"
+    insee_melodi_url: str = "https://api.insee.fr/melodi"
 
 
 @lru_cache

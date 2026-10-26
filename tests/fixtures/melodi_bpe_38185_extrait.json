@@ -1,0 +1,185 @@
+{
+ "observations": [
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "C4",
+    "FACILITY_TYPE": "C411",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "C"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 2.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "D3",
+    "FACILITY_TYPE": "D302",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "D"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 13.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "F1",
+    "FACILITY_TYPE": "F101",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "F"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 6.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "F3",
+    "FACILITY_TYPE": "F303",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "F"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 5.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "B2",
+    "FACILITY_TYPE": "B201",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "B"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 39.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "A5",
+    "FACILITY_TYPE": "A504",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "A"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 1023.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "C4",
+    "FACILITY_TYPE": "_T",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "C"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 22.0
+    }
+   }
+  },
+  {
+   "attributes": {
+    "OBS_STATUS": "A",
+    "UNIT_MULT": "0"
+   },
+   "dimensions": {
+    "GEO": "2026-COM-38185",
+    "BPE_MEASURE": "FACILITIES",
+    "FACILITY_SDOM": "_T",
+    "FACILITY_TYPE": "_T",
+    "TIME_PERIOD": "2025",
+    "UNIT_MEASURE": "NR",
+    "FACILITY_DOM": "D"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 2500.0
+    }
+   }
+  }
+ ],
+ "identifier": "DS_BPE",
+ "paging": {
+  "first": "https://api.insee.fr/melodi/data/DS_BPE?GEO=COM-38185&BPE_MEASURE=FACILITIES&TIME_PERIOD=2025&maxResult=1000&page=1"
+ },
+ "publisher": {
+  "id": "INSEE",
+  "label": [
+   {
+    "content": "Institut national de la statistique et des etudes economiques (INSEE)",
+    "lang": "fr"
+   },
+   {
+    "content": "National Institute of Statistics and Economic Studies",
+    "lang": "en"
+   }
+  ]
+ },
+ "title": {
+  "en": "Number of facilities (commerce, services, health, etc.)",
+  "fr": "Dénombrement des équipements (commerce, sport, services, santé…)"
+ }
+}

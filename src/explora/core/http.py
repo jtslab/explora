@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 
-Params = Mapping[str, str | int | float | None]
+Params = Mapping[str, str | int | float | list[str] | None]
+"""Une liste répète le paramètre (`?TSH=200&TSH=_T`)."""
 
 
 @dataclass(frozen=True)
