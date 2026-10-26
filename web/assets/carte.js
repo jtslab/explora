@@ -18,6 +18,7 @@
     "976": { center: [45.14, -12.82], zoom: 9.8 }
   };
   var CLE_POIDS = "explora.poids";
+  var GROUPES = { ville: "Villes", metier: "Métiers", secteur: "Secteurs d'activité", formation: "Formations" };
 
   var E = window.Explora;
   var villes = [];
@@ -87,7 +88,7 @@
     var aucun = AXES.every(function (a) { return lirePoids()[a.id] === 0; });
     var liste = document.getElementById("classement");
     document.getElementById("titre-classement").textContent = filtre
-      ? "Les 10 premières qui proposent cette formation"
+      ? "Les 10 premières avec une formation correspondante"
       : "Les 10 premières avec vos réglages";
     if (aucun) {
       liste.innerHTML = "<li>Donnez de l'importance à au moins un axe pour classer les villes.</li>";
@@ -169,10 +170,21 @@
         ids.forEach(function (id) { parVille[id].push(i); });
         return { libelle: m[0], cle: normaliser(m[0]), type: m[1], ids: ids };
       }),
-      parVille: parVille
+      parVille: parVille,
+      metiers: (index.metiers || []).map(function (m) {
+        return { code: m[0], libelle: m[1], cle: normaliser(m[1]), mentions: m[2] };
+      }),
+      secteurs: (index.secteurs || []).map(function (d) {
+        return { lettre: d[0], libelle: d[1], cle: normaliser(d[1]) };
+      })
     };
-    document.getElementById("recherche").placeholder = "Une ville, une formation : Rennes, infirmier, BTS tourisme…";
-    document.getElementById("libelle-recherche").textContent = "Chercher une ville ou une formation";
+    var metiers = formations.metiers.length > 0;
+    document.getElementById("recherche").placeholder = metiers
+      ? "Ville, métier, secteur, formation : Rennes, infirmier, santé…"
+      : "Une ville, une formation : Rennes, infirmier, BTS tourisme…";
+    document.getElementById("libelle-recherche").textContent = metiers
+      ? "Chercher une ville, un métier ou une formation"
+      : "Chercher une ville ou une formation";
   }
 
   function appliquerFiltre(nouveau) {
@@ -181,7 +193,7 @@
     if (filtre) {
       document.getElementById("filtre-libelle").textContent = filtre.libelle;
       document.getElementById("filtre-nombre").textContent =
-        filtre.ids.size + (filtre.ids.size > 1 ? " villes la proposent" : " ville la propose");
+        filtre.ids.size + (filtre.ids.size > 1 ? " villes avec une formation qui y mène" : " ville avec une formation qui y mène");
       zone.hidden = false;
     } else {
       zone.hidden = true;
@@ -205,15 +217,44 @@
     return { libelle: libelle, mentions: new Set(indices), ids: ids };
   }
 
+  function nbVilles(f) {
+    return f.ids.size + (f.ids.size > 1 ? " villes" : " ville");
+  }
+
+  function suggestionsMetiers(mots) {
+    var res = [];
+    formations.metiers
+      .filter(function (m) { return correspond(m.cle, mots); })
+      .map(function (m) { return { m: m, f: filtreMentions("Métier : " + m.libelle, m.mentions) }; })
+      .sort(function (a, b) { return b.f.ids.size - a.f.ids.size; })
+      .slice(0, 4)
+      .forEach(function (x) {
+        res.push({ genre: "metier", filtre: x.f, texte: x.m.libelle, detail: nbVilles(x.f) });
+      });
+    formations.secteurs
+      .filter(function (d) { return correspond(d.cle, mots); })
+      .slice(0, 2)
+      .forEach(function (d) {
+        var indices = [];
+        formations.metiers.forEach(function (m) {
+          if (m.code.charAt(0) === d.lettre) indices = indices.concat(m.mentions);
+        });
+        var f = filtreMentions("Secteur : " + d.libelle, indices);
+        res.push({ genre: "secteur", filtre: f, texte: d.libelle, detail: nbVilles(f) });
+      });
+    return res;
+  }
+
   function suggestions(q) {
     var mots = q.split(" ");
     var res = villes.filter(function (f) { return correspond(normaliser(f.properties.nom), mots); })
       .sort(function (a, b) {
         return normaliser(a.properties.nom).indexOf(mots[0]) - normaliser(b.properties.nom).indexOf(mots[0]) ||
           b.properties.etudiants - a.properties.etudiants;
-      }).slice(0, formations ? 4 : 6)
+      }).slice(0, formations ? 3 : 6)
       .map(function (f) { return { genre: "ville", f: f, texte: f.properties.nom, detail: f.properties.departement }; });
     if (!formations) return res;
+    res = res.concat(suggestionsMetiers(mots));
 
     var types = [];
     formations.types.forEach(function (t, i) { if (correspond(t.cle, mots)) types.push(i); });
@@ -230,7 +271,7 @@
         detail: trouvees.length + " formations"
       });
     }
-    trouvees.slice(0, 6).forEach(function (i) {
+    trouvees.slice(0, 5).forEach(function (i) {
       var m = formations.mentions[i];
       res.push({
         genre: "formation",
@@ -281,7 +322,7 @@
           var titre = "";
           if (formations && s.genre !== groupe) {
             groupe = s.genre;
-            titre = '<li class="groupe" role="presentation">' + (s.genre === "ville" ? "Villes" : "Formations") + "</li>";
+            titre = '<li class="groupe" role="presentation">' + GROUPES[s.genre] + "</li>";
           }
           return titre + '<li><button type="button" role="option" data-i="' + i + '"><span>' + echapper(s.texte) +
             "</span><small>" + echapper(s.detail) + "</small></button></li>";
