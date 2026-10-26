@@ -1,4 +1,4 @@
-name: Démo du site
+name: Site
 
 # Publie la maquette sur GitHub Pages à chaque merge sur main.
 # Prérequis : Settings > Pages > Source = « GitHub Actions ».
@@ -30,7 +30,7 @@ jobs:
       - name: Générer le site
         run: >
           uv run python -m explora.site.generer
-          --donnees web/data/villes.demo.geojson
+          --donnees data/export/villes_etudiantes.geojson
           --sortie dist/site
           --base-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
       - uses: actions/upload-pages-artifact@v3
