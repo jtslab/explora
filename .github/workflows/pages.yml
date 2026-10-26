@@ -1,0 +1,48 @@
+name: Démo du site
+
+# Publie la maquette sur GitHub Pages à chaque merge sur main.
+# Prérequis : Settings > Pages > Source = « GitHub Actions ».
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Installer Python et les dépendances
+        run: uv sync --frozen --python 3.12 --no-dev
+      - name: Générer le site
+        run: >
+          uv run python -m explora.site.generer
+          --donnees web/data/villes.demo.geojson
+          --sortie dist/site
+          --base-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,150 @@
+[
+ {
+  "etab_uai": "0350097R",
+  "etab_nom": "INSA Rennes (35)",
+  "tc": "Publics",
+  "tf": [
+   "Formations des écoles d'ingénieurs"
+  ],
+  "nm": [
+   "Formation d'ingénieur Bac + 5 - Bac Général"
+  ],
+  "fl": [
+   "Formation d'ingénieur Bac + 5"
+  ],
+  "app": null,
+  "departement": "Ille-et-Vilaine",
+  "commune": "Rennes",
+  "etab_gps": {
+   "lon": -1.63536,
+   "lat": 48.1237
+  },
+  "fiche": "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=60&typeBac=0&originePc=0",
+  "gta": "60",
+  "annee": "2026"
+ },
+ {
+  "etab_uai": "0350730D",
+  "etab_nom": "ASKORIA (Rennes - 35)",
+  "tc": "Privés",
+  "tf": [
+   "Formations diplômantes du travail social"
+  ],
+  "nm": [
+   "D.E Educateur Technique Spécialisé - en apprentissage"
+  ],
+  "fl": [
+   "D.E Educateur Technique Spécialisé"
+  ],
+  "app": [
+   "Formations en apprentissage"
+  ],
+  "departement": "Ille-et-Vilaine",
+  "commune": "Rennes",
+  "etab_gps": {
+   "lon": -1.70152,
+   "lat": 48.1258
+  },
+  "fiche": "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=26021&typeBac=0&originePc=0",
+  "gta": "26021",
+  "annee": "2026"
+ },
+ {
+  "etab_uai": "0352854M",
+  "etab_nom": "Ecole Européenne Supérieure d'Art de Bretagne - Site de Rennes (35)",
+  "tc": "Publics",
+  "tf": [
+   "Formations d'art, de design et du spectacle vivant"
+  ],
+  "nm": [
+   "Diplôme National d'Art - Option Art- Design-Design graphique"
+  ],
+  "fl": [
+   "Diplôme National d'Art"
+  ],
+  "app": null,
+  "departement": "Ille-et-Vilaine",
+  "commune": "Rennes",
+  "etab_gps": {
+   "lon": -1.67661,
+   "lat": 48.1143
+  },
+  "fiche": "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=26263&typeBac=0&originePc=0",
+  "gta": "26263",
+  "annee": "2026"
+ },
+ {
+  "etab_uai": "9740054C",
+  "etab_nom": "La Prépa des INP - Groupe INP - Saint-Denis de la Réunion (974)",
+  "tc": "Publics",
+  "tf": [
+   "Formations des écoles d'ingénieurs"
+  ],
+  "nm": [
+   "Formation d'ingénieur Bac + 5 - Bac général"
+  ],
+  "fl": [
+   "Formation d'ingénieur Bac + 5"
+  ],
+  "app": null,
+  "departement": "La Réunion",
+  "commune": "Saint-Denis",
+  "etab_gps": {
+   "lon": 55.4679,
+   "lat": -20.8907
+  },
+  "fiche": "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=6&typeBac=0&originePc=0",
+  "gta": "6",
+  "annee": "2026"
+ },
+ {
+  "etab_uai": "9740478B",
+  "etab_nom": "Université de La Réunion - Saint Denis (974)",
+  "tc": "Publics",
+  "tf": [
+   "Licence"
+  ],
+  "nm": [
+   "Licence - Informatique"
+  ],
+  "fl": [
+   "L1 - Informatique"
+  ],
+  "app": null,
+  "departement": "La Réunion",
+  "commune": "Saint-Denis",
+  "etab_gps": {
+   "lon": 55.4852,
+   "lat": -20.9017
+  },
+  "fiche": "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=26386&typeBac=0&originePc=0",
+  "gta": "26386",
+  "annee": "2026"
+ },
+ {
+  "etab_uai": "0755902H",
+  "etab_nom": "SUP DE V - ANTENNE CFA DE LA CCIR PARIS (Paris 15e  Arrondissement - 75)",
+  "tc": "Publics",
+  "tf": [
+   "BTS - BTSA - BTSM"
+  ],
+  "nm": [
+   "BTS - Services - Management Commercial Opérationnel - en apprentissage"
+  ],
+  "fl": [
+   "BTS - Management Commercial Opérationnel"
+  ],
+  "app": [
+   "Formations en apprentissage"
+  ],
+  "departement": "Paris",
+  "commune": "Paris",
+  "etab_gps": {
+   "lon": 2.31745,
+   "lat": 48.8424
+  },
+  "fiche": "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=25553&typeBac=0&originePc=0",
+  "gta": "25553",
+  "annee": "2026"
+ }
+]

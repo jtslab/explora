@@ -26,5 +26,7 @@ jobs:
         run: uv run mypy
       - name: Tests (API simulées)
         run: uv run pytest --cov --cov-report=term-missing
+      - name: Génération du site (données de démo)
+        run: uv run python -m explora.site.generer --sortie dist/site
       - name: Build de l'image Docker
         run: docker build -t explora:ci .
