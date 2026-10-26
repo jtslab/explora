@@ -54,7 +54,7 @@ flowchart LR
 | Brique | État |
 | --- | --- |
 | Client HTTP commun, cache, rate-limit, retry | fait, testé |
-| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, vœux Parcoursup, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
+| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, vœux Parcoursup, cartographie des formations, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
 | Indicateurs (rendement, tension, vitalité) et score 4 axes | fait, testé |
 | API : `/health`, `/sources`, `/communes/{code_insee}` | fait |
 | Adaptateurs effectifs ESR, DVF, SIRENE, GTFS/GBFS, qualité de l'air | à faire |
@@ -101,6 +101,10 @@ python -m http.server -d dist/site 8001                     # puis http://localh
 - `web/data/villes.demo.geojson` : les 400 vraies villes, leurs vrais effectifs et
   formations, et des indicateurs **fictifs** (badge « démo » sur chaque valeur, pages en
   `noindex`). Régénération : `uv run python -m explora.site.demo`.
+- `web/data/formations.json` : les ~22 000 formations post-bac (session 2026) des villes,
+  données **réelles** de la cartographie des formations du MESR. Elles alimentent la
+  recherche par formation sur la carte et la liste des formations de chaque fiche ville.
+  Régénération : `uv run python -m explora.site.formations`.
 - Fond de carte : Plan IGN (Géoplateforme, WMTS), désaturé.
 - Démo publiée par `.github/workflows/pages.yml` à chaque merge sur `main`
   (activer Settings > Pages > Source « GitHub Actions »).

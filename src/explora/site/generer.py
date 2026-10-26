@@ -18,6 +18,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 from explora.modules.etudiant.scoring import Axe
+from explora.site import formations as fm
 from explora.site.donnees import ExportVilles, FeatureVille, ProprietesVille, charger, slugs
 
 FORMATIONS = {
@@ -220,7 +221,64 @@ def _environnement(dossier_web: Path) -> Environment:
     return env
 
 
-def generer(export: ExportVilles, dossier_web: Path, sortie: Path, base_url: str) -> list[Path]:
+@dataclass(frozen=True)
+class FormationVille:
+    mention: str
+    etablissement: str
+    public: bool
+    apprentissage: bool
+    url: str
+
+
+def formations_par_type(
+    index: fm.IndexFormations | None, code_insee: str
+) -> list[tuple[str, list[FormationVille]]]:
+    """Formations d'une ville groupées par type (BTS, Licence...), les plus fournis d'abord."""
+    if index is None:
+        return []
+    groupes: dict[str, list[FormationVille]] = defaultdict(list)
+    for o in index.offres.get(code_insee, []):
+        mention = index.mentions[o.mention]
+        etab = index.etablissements.get(o.uai)
+        groupes[index.types[mention.type]].append(
+            FormationVille(
+                mention=mention.libelle,
+                etablissement=etab.nom if etab else o.uai,
+                public=bool(etab and etab.secteur == "Publics"),
+                apprentissage=o.apprentissage,
+                url=fm.URL_FICHE.format(code=o.code),
+            )
+        )
+    return sorted(
+        (
+            (t, sorted(f, key=lambda x: (fm.normaliser(x.mention), x.etablissement)))
+            for t, f in groupes.items()
+        ),
+        key=lambda g: (-len(g[1]), g[0]),
+    )
+
+
+def _index_carte(index: fm.IndexFormations) -> str:
+    """Mentions et villes qui les proposent, pour la recherche côté navigateur."""
+    villes = index.villes_par_mention()
+    return json.dumps(
+        {
+            "session": index.session,
+            "types": index.types,
+            "mentions": [[m.libelle, m.type, villes[i]] for i, m in enumerate(index.mentions)],
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
+def generer(
+    export: ExportVilles,
+    dossier_web: Path,
+    sortie: Path,
+    base_url: str,
+    formations: fm.IndexFormations | None = None,
+) -> list[Path]:
     """Écrit le site dans `sortie` et renvoie les pages produites."""
     base_url = base_url.rstrip("/")
     env = _environnement(dossier_web)
@@ -236,7 +294,16 @@ def generer(export: ExportVilles, dossier_web: Path, sortie: Path, base_url: str
     (sortie / "data" / "villes.geojson").write_text(
         _geojson_carte(export, villes), encoding="utf-8"
     )
-    commun = {"meta": export.metadata, "base_url": base_url, "total": len(villes)}
+    if formations is not None:
+        (sortie / "data" / "formations-index.json").write_text(
+            _index_carte(formations), encoding="utf-8"
+        )
+    commun = {
+        "meta": export.metadata,
+        "base_url": base_url,
+        "total": len(villes),
+        "session_formations": formations.session if formations else None,
+    }
 
     pages = [sortie / "index.html"]
     pages[0].write_text(
@@ -256,6 +323,7 @@ def generer(export: ExportVilles, dossier_web: Path, sortie: Path, base_url: str
                 racine="../../",
                 v=v,
                 proches=[(o, distance_km(v, o)) for o in proches],
+                formations=formations_par_type(formations, v.p.code_insee),
                 **commun,
             ),
             encoding="utf-8",
@@ -310,9 +378,11 @@ def main() -> None:
     parser.add_argument("--donnees", type=Path, default=Path("web/data/villes.demo.geojson"))
     parser.add_argument("--web", type=Path, default=Path("web"))
     parser.add_argument("--sortie", type=Path, default=Path("dist/site"))
+    parser.add_argument("--formations", type=Path, default=Path("web/data/formations.json"))
     parser.add_argument("--base-url", default="https://explora.app")
     args = parser.parse_args()
-    pages = generer(charger(args.donnees), args.web, args.sortie, args.base_url)
+    index = fm.charger(args.formations) if args.formations.exists() else None
+    pages = generer(charger(args.donnees), args.web, args.sortie, args.base_url, index)
     print(f"{len(pages)} pages écrites dans {args.sortie}")
 
 

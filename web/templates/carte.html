@@ -11,9 +11,13 @@
     </div>
 
     <div class="recherche">
-      <label class="bloc-titre" for="recherche">Chercher une ville</label>
+      <label class="bloc-titre" for="recherche" id="libelle-recherche">Chercher une ville</label>
       <input id="recherche" type="search" placeholder="Rennes, Pau, Saint-Denis…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="suggestions">
       <ul id="suggestions" role="listbox" hidden></ul>
+      <div class="filtre" id="filtre" role="status" hidden>
+        <div><b id="filtre-libelle"></b><span id="filtre-nombre"></span></div>
+        <button type="button" id="filtre-retirer">Retirer</button>
+      </div>
     </div>
 
     <fieldset class="poids">

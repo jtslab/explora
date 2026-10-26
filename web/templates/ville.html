@@ -99,6 +99,32 @@
       <li>{{ FORMATIONS.get(f, f) }}</li>
       {% endfor %}
     </ul>
+    {% if formations %}
+    {% set nb = formations|map(attribute=1)|map("length")|sum %}
+    <div class="formations" id="formations">
+      <div class="formations-tete">
+        <h3>{{ nb|nombre }} formation{{ "s" if nb > 1 }} après le bac à {{ p.nom }}</h3>
+        <label class="vh" for="filtre-formations">Filtrer les formations</label>
+        <input id="filtre-formations" type="search" placeholder="Filtrer : infirmier, tourisme, droit…" autocomplete="off">
+      </div>
+      {% for type_, liste in formations %}
+      <details{% if loop.first and formations|length <= 3 %} open{% endif %}>
+        <summary><span>{{ type_ }}</span><small>{{ liste|length }}</small></summary>
+        <ul>
+          {% for f in liste %}
+          <li>
+            <a href="{{ f.url }}" rel="noopener" target="_blank">{{ f.mention }}</a>
+            <span class="etab">{{ f.etablissement }}</span>
+            <span class="tags">{{ "public" if f.public else "privé" }}{% if f.apprentissage %} · apprentissage possible{% endif %}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endfor %}
+      <p class="aucune" hidden>Aucune formation ne correspond à ce filtre.</p>
+      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.</p>
+    </div>
+    {% endif %}
   </section>
 
   <section class="section" aria-labelledby="vie">
@@ -150,6 +176,9 @@
       {% for s in meta.sources %}
       <li>{{ s.attribution }} ({{ s.licence }})</li>
       {% endfor %}
+      {% if session_formations %}
+      <li>Cartographie des formations post-bac, MESR, session {{ session_formations }} (Licence Ouverte 2.0)</li>
+      {% endif %}
       <li>Fond de carte © IGN, Géoplateforme.</li>
     </ul>
     <p>Explora est un outil indépendant, sans lien avec les organismes publics dont il réutilise les données ouvertes. Données mises à jour le {{ meta.genere_le.strftime("%d/%m/%Y") }}.</p>

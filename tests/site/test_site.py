@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from explora.core.models import OffreFormation
 from explora.site import demo
+from explora.site import formations as fm
 from explora.site.donnees import (
     Axes,
     ExportVilles,
@@ -42,6 +44,55 @@ def _ville(code: str, nom: str, dep: str, lon: float, lat: float, score: float) 
             risques=["Inondation"],
         ),
     )
+
+
+def _offre(commune: str, departement: str, mention: str, uai: str, code: str) -> OffreFormation:
+    return OffreFormation(
+        session="2026",
+        code=code,
+        code_uai=uai,
+        etablissement=f"Lycée {uai} (35)",
+        secteur="Publics",
+        types=["BTS - BTSA - BTSM"],
+        mentions=[mention],
+        commune=commune,
+        departement=departement,
+    )
+
+
+@pytest.fixture
+def formations() -> fm.IndexFormations:
+    villes = [
+        {"code_insee": "35238", "nom": "Rennes", "departement": "Ille-et-Vilaine"},
+        {"code_insee": "97411", "nom": "Saint-Denis", "departement": "La Réunion"},
+        {"code_insee": "93066", "nom": "Saint-Denis", "departement": "Seine-Saint-Denis"},
+    ]
+    offres = [
+        _offre("Rennes", "Ille-et-Vilaine", "BTS - Tourisme", "A", "1"),
+        _offre("Rennes", "Ille-et-Vilaine", "BTS - Tourisme", "A", "1"),  # doublon
+        _offre("Saint-Denis", "La Réunion", "BTS - Tourisme", "B", "2"),
+        _offre("Saint-Denis", "Seine-Saint-Denis", "BTS - Communication", "C", "3"),
+        _offre("Brest", "Finistère", "BTS - Tourisme", "D", "4"),  # hors liste
+    ]
+    return fm.construire(offres, villes)
+
+
+def test_index_formations(formations: fm.IndexFormations) -> None:
+    assert [m.libelle for m in formations.mentions] == ["BTS - Communication", "BTS - Tourisme"]
+    assert formations.villes_par_mention() == [["93066"], ["35238", "97411"]]
+    assert len(formations.offres["35238"]) == 1
+    assert formations.etablissements["A"].nom == "Lycée A"
+
+
+def test_generer_avec_formations(
+    export: ExportVilles, formations: fm.IndexFormations, tmp_path: Path
+) -> None:
+    generer(export, RACINE / "web", tmp_path, "https://explora.app", formations)
+    index = json.loads((tmp_path / "data" / "formations-index.json").read_text())
+    assert index["mentions"][1] == ["BTS - Tourisme", 0, ["35238", "97411"]]
+    html = (tmp_path / "villes" / "saint-denis-974" / "index.html").read_text()
+    assert "1 formation après le bac à Saint-Denis" in html
+    assert "g_ta_cod=2&" in html
 
 
 @pytest.fixture
@@ -107,7 +158,8 @@ def test_mentions_interdites(export: ExportVilles, tmp_path: Path) -> None:
     generer(export, RACINE / "web", tmp_path, "https://explora.app")
     for fichier in tmp_path.rglob("*"):
         if fichier.suffix in {".html", ".js", ".css", ".json", ".geojson"}:
-            texte = fichier.read_text().lower()
+            # Les liens vers les fiches officielles des formations sont permis.
+            texte = re.sub(r"https://\S+", "", fichier.read_text()).lower()
             assert "crous" not in texte and "parcoursup" not in texte, fichier
 
 

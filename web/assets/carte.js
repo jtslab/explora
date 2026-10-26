@@ -24,6 +24,8 @@
   var donnees = null;
   var carte = null;
   var bulle = null;
+  var formations = null;
+  var filtre = null;
 
   function echapper(texte) {
     return String(texte).replace(/[&<>"']/g, function (c) {
@@ -68,6 +70,7 @@
     notees.forEach(function (f, i) {
       f.properties.pos = notees.length > 1 ? (100 * i) / (notees.length - 1) : 50;
     });
+    villes.forEach(function (f) { f.properties.actif = !filtre || filtre.ids.has(f.id) ? 1 : 0; });
     if (carte && carte.getSource("villes")) carte.getSource("villes").setData(donnees);
     afficherClassement();
   }
@@ -79,9 +82,13 @@
   }
 
   function afficherClassement() {
-    var tries = villes.slice().sort(function (a, b) { return b.properties.score - a.properties.score; });
+    var tries = villes.filter(function (f) { return f.properties.actif; })
+      .sort(function (a, b) { return b.properties.score - a.properties.score; });
     var aucun = AXES.every(function (a) { return lirePoids()[a.id] === 0; });
     var liste = document.getElementById("classement");
+    document.getElementById("titre-classement").textContent = filtre
+      ? "Les 10 premières qui proposent cette formation"
+      : "Les 10 premières avec vos réglages";
     if (aucun) {
       liste.innerHTML = "<li>Donnez de l'importance à au moins un axe pour classer les villes.</li>";
       return;
@@ -104,12 +111,21 @@
     return '<div class="bulle">' +
       '<div class="tete"><div><h3>' + echapper(p.nom) + '</h3><span class="dep">' +
       echapper(p.departement) + " (" + echapper(p.dep) + ")</span></div>" + pastille(p.score, p.pos) + "</div>" +
-      '<div class="barres">' + barres + "</div>" +
+      '<div class="barres">' + barres + "</div>" + formationsBulle(p) +
       "<dl><dt>Étudiants inscrits</dt><dd>" + E.nombre(p.etudiants) + "</dd>" +
       "<dt>Loyer estimé</dt><dd>" + E.nombre(p.loyer_m2, 1, "€/m²") + "</dd>" +
       "<dt>Rendement brut indicatif</dt><dd>" +
       (p.rendement === null ? "n.d." : E.nombre(p.rendement * 100, 1, "%")) + "</dd></dl>" +
-      '<a href="villes/' + p.slug + '/">Voir la fiche de ' + echapper(p.nom) + " →</a></div>";
+      '<a href="villes/' + p.slug + "/" + (filtre ? "#formations" : "") + '">Voir la fiche de ' + echapper(p.nom) + " →</a></div>";
+  }
+
+  function formationsBulle(p) {
+    if (!filtre || !formations) return "";
+    var trouvees = formations.parVille[p.id_carte].filter(function (i) { return filtre.mentions.has(i); });
+    if (!trouvees.length) return '<p class="bulle-formations">Aucune formation de cette recherche ici.</p>';
+    var noms = trouvees.slice(0, 3).map(function (i) { return echapper(formations.mentions[i].libelle); });
+    var reste = trouvees.length > 3 ? "<li>et " + (trouvees.length - 3) + " autres</li>" : "";
+    return '<ul class="bulle-formations"><li>' + noms.join("</li><li>") + "</li>" + reste + "</ul>";
   }
 
   function etroit() {
@@ -118,6 +134,7 @@
 
   function ouvrir(f, voler) {
     var p = villes[f.id].properties;
+    p.id_carte = f.id;
     var coord = villes[f.id].geometry.coordinates;
     // Sur téléphone la carte est basse : on remonte le point pour laisser place à la bulle.
     var decalage = etroit() ? [0, -carte.getContainer().clientHeight * 0.3] : [0, 0];
@@ -131,23 +148,121 @@
       .setLngLat(coord).setHTML(contenuBulle(p)).addTo(carte);
   }
 
+  function normaliser(t) {
+    return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  // Tous les mots de la requête doivent apparaître (« commerce international »).
+  function correspond(texte, mots) {
+    return mots.every(function (m) { return texte.indexOf(m) !== -1; });
+  }
+
+  function preparerFormations(index) {
+    var parVille = villes.map(function () { return []; });
+    var code = {};
+    villes.forEach(function (f) { code[f.properties.code] = f.id; });
+    formations = {
+      session: index.session,
+      types: index.types.map(function (t) { return { libelle: t, cle: normaliser(t) }; }),
+      mentions: index.mentions.map(function (m, i) {
+        var ids = m[2].map(function (c) { return code[c]; }).filter(function (id) { return id !== undefined; });
+        ids.forEach(function (id) { parVille[id].push(i); });
+        return { libelle: m[0], cle: normaliser(m[0]), type: m[1], ids: ids };
+      }),
+      parVille: parVille
+    };
+    document.getElementById("recherche").placeholder = "Une ville, une formation : Rennes, infirmier, BTS tourisme…";
+    document.getElementById("libelle-recherche").textContent = "Chercher une ville ou une formation";
+  }
+
+  function appliquerFiltre(nouveau) {
+    filtre = nouveau;
+    var zone = document.getElementById("filtre");
+    if (filtre) {
+      document.getElementById("filtre-libelle").textContent = filtre.libelle;
+      document.getElementById("filtre-nombre").textContent =
+        filtre.ids.size + (filtre.ids.size > 1 ? " villes la proposent" : " ville la propose");
+      zone.hidden = false;
+    } else {
+      zone.hidden = true;
+    }
+    if (bulle) bulle.remove();
+    recalculer();
+    if (filtre && carte && filtre.ids.size) {
+      var bornes = new maplibregl.LngLatBounds();
+      filtre.ids.forEach(function (id) {
+        var c = villes[id].geometry.coordinates;
+        // L'outre-mer étirerait le cadrage sur la moitié du globe.
+        if (c[0] > -6 && c[0] < 10 && c[1] > 41) bornes.extend(c);
+      });
+      if (!bornes.isEmpty()) carte.fitBounds(bornes, { padding: 40, maxZoom: 9 });
+    }
+  }
+
+  function filtreMentions(libelle, indices) {
+    var ids = new Set();
+    indices.forEach(function (i) { formations.mentions[i].ids.forEach(function (id) { ids.add(id); }); });
+    return { libelle: libelle, mentions: new Set(indices), ids: ids };
+  }
+
+  function suggestions(q) {
+    var mots = q.split(" ");
+    var res = villes.filter(function (f) { return correspond(normaliser(f.properties.nom), mots); })
+      .sort(function (a, b) {
+        return normaliser(a.properties.nom).indexOf(mots[0]) - normaliser(b.properties.nom).indexOf(mots[0]) ||
+          b.properties.etudiants - a.properties.etudiants;
+      }).slice(0, formations ? 4 : 6)
+      .map(function (f) { return { genre: "ville", f: f, texte: f.properties.nom, detail: f.properties.departement }; });
+    if (!formations) return res;
+
+    var types = [];
+    formations.types.forEach(function (t, i) { if (correspond(t.cle, mots)) types.push(i); });
+    var trouvees = [];
+    formations.mentions.forEach(function (m, i) {
+      if (correspond(m.cle, mots) || types.indexOf(m.type) !== -1) trouvees.push(i);
+    });
+    trouvees.sort(function (a, b) { return formations.mentions[b].ids.length - formations.mentions[a].ids.length; });
+    if (trouvees.length > 1) {
+      res.push({
+        genre: "formation",
+        filtre: filtreMentions("Formations « " + q + " »", trouvees),
+        texte: "Toutes les formations « " + q + " »",
+        detail: trouvees.length + " formations"
+      });
+    }
+    trouvees.slice(0, 6).forEach(function (i) {
+      var m = formations.mentions[i];
+      res.push({
+        genre: "formation",
+        filtre: filtreMentions(m.libelle, [i]),
+        texte: m.libelle,
+        detail: m.ids.length + (m.ids.length > 1 ? " villes" : " ville")
+      });
+    });
+    return res;
+  }
+
   function preparerRecherche() {
     var champ = document.getElementById("recherche");
     var liste = document.getElementById("suggestions");
     var choix = [];
     var actif = -1;
-    function normaliser(t) {
-      return t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[-'’]/g, " ");
-    }
     function fermer() {
       liste.hidden = true;
       champ.setAttribute("aria-expanded", "false");
       actif = -1;
     }
-    function choisir(f) {
-      champ.value = f.properties.nom;
+    function choisir(s) {
       fermer();
-      ouvrir(f, true);
+      if (s.genre === "ville") {
+        champ.value = s.texte;
+        ouvrir(s.f, true);
+      } else {
+        champ.value = "";
+        appliquerFiltre(s.filtre);
+      }
+      // Sur téléphone la carte est au-dessus du panneau : on la ramène à l'écran.
+      if (etroit()) window.scrollTo({ top: 0, behavior: "smooth" });
     }
     function marquer() {
       Array.prototype.forEach.call(liste.querySelectorAll("button"), function (b, i) {
@@ -155,19 +270,21 @@
       });
     }
     champ.addEventListener("input", function () {
-      var q = normaliser(champ.value.trim());
+      var q = normaliser(champ.value);
       if (q.length < 2) { fermer(); return; }
-      choix = villes.filter(function (f) { return normaliser(f.properties.nom).indexOf(q) !== -1; })
-        .sort(function (a, b) {
-          return normaliser(a.properties.nom).indexOf(q) - normaliser(b.properties.nom).indexOf(q) ||
-            b.properties.etudiants - a.properties.etudiants;
-        }).slice(0, 6);
+      choix = suggestions(q);
       if (!choix.length) {
-        liste.innerHTML = "<li><small>Aucune des " + villes.length + " villes ne correspond.</small></li>";
+        liste.innerHTML = "<li><small>Aucune ville ni formation ne correspond.</small></li>";
       } else {
-        liste.innerHTML = choix.map(function (f, i) {
-          return '<li><button type="button" role="option" data-i="' + i + '">' + echapper(f.properties.nom) +
-            "<small>" + echapper(f.properties.departement) + "</small></button></li>";
+        var groupe = null;
+        liste.innerHTML = choix.map(function (s, i) {
+          var titre = "";
+          if (formations && s.genre !== groupe) {
+            groupe = s.genre;
+            titre = '<li class="groupe" role="presentation">' + (s.genre === "ville" ? "Villes" : "Formations") + "</li>";
+          }
+          return titre + '<li><button type="button" role="option" data-i="' + i + '"><span>' + echapper(s.texte) +
+            "</span><small>" + echapper(s.detail) + "</small></button></li>";
         }).join("");
       }
       liste.hidden = false;
@@ -186,6 +303,10 @@
     });
     document.addEventListener("click", function (e) {
       if (!e.target.closest(".recherche")) fermer();
+    });
+    document.getElementById("filtre-retirer").addEventListener("click", function () {
+      appliquerFiltre(null);
+      champ.focus();
     });
   }
 
@@ -237,13 +358,15 @@
         id: "villes",
         type: "circle",
         source: "villes",
-        layout: { "circle-sort-key": ["-", 0, ["get", "etudiants"]] },
+        // Villes retenues par la recherche au-dessus, puis les petites sur les grandes.
+        layout: { "circle-sort-key": ["-", ["*", 1e7, ["get", "actif"]], ["get", "etudiants"]] },
         paint: {
           "circle-color": couleurs(),
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, rayon(1), 8, rayon(2.2), 12, rayon(3.5)],
+          "circle-stroke-opacity": ["case", ["==", ["get", "actif"], 1], 1, 0.25],
           "circle-stroke-color": getComputedStyle(document.documentElement).getPropertyValue("--point-trait").trim() || "#18211f",
           "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 10, 1.2],
-          "circle-opacity": 0.95
+          "circle-opacity": ["case", ["==", ["get", "actif"], 1], 0.95, 0.12]
         }
       });
       E.fondDeSecours(carte, "./");
@@ -261,12 +384,19 @@
     });
   }
 
-  fetch("data/villes.geojson")
-    .then(function (r) {
-      if (!r.ok) throw new Error(r.status);
+  function charger(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error(url + " : " + r.status);
       return r.json();
+    });
+  }
+
+  charger("data/villes.geojson")
+    .then(function (geo) {
+      demarrer(geo);
+      // La recherche par formation s'ajoute quand l'index est là ; la carte n'en dépend pas.
+      return charger("data/formations-index.json").then(preparerFormations, function () {});
     })
-    .then(demarrer)
     .catch(function () {
       document.getElementById("classement").innerHTML =
         "<li>Les données des villes n'ont pas pu être chargées. Rechargez la page.</li>";
