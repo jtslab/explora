@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block titre %}{% endblock %}</title>
+<meta name="description" content="{% block description %}{% endblock %}">
+<link rel="canonical" href="{% block canonique %}{% endblock %}">
+{% if meta.demo %}
+<meta name="robots" content="noindex">
+{% endif %}
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="Explora">
+<meta property="og:title" content="{{ self.titre() }}">
+<meta property="og:description" content="{{ self.description() }}">
+<meta name="theme-color" content="#f3f4ef">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="{{ racine }}assets/explora.css">
+{% block tete %}{% endblock %}
+</head>
+<body class="page-{{ page }}">
+<header class="bandeau">
+  <a class="marque" href="{{ racine }}"><b>Expl<i>o</i>ra</b><span>Villes étudiantes</span></a>
+  {% if meta.demo %}
+  <span class="pastille-demo" title="Les scores et la plupart des chiffres sont fictifs">Maquette · données fictives</span>
+  {% endif %}
+  <nav aria-label="Navigation principale">
+    <a href="{{ racine }}" {% if page == "carte" %}aria-current="page"{% endif %}>Carte</a>
+    <a href="{{ racine }}#methode">Méthode</a>
+    <a href="https://github.com/jtslab/explora">Code source</a>
+  </nav>
+</header>
+{% block contenu %}{% endblock %}
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="{{ racine }}assets/fond.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

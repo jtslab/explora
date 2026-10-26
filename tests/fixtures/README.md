@@ -16,6 +16,7 @@ restent fidèles au format réel. Pour les régénérer, relancer les appels de
 | `melodi_rp_logement_38185.json` | `api.insee.fr/melodi/data/DS_RP_LOGEMENT_PRINC?GEO=COM-38185&TSH=200&TSH=_T&TSH=212_222&…` |
 | `melodi_bpe_38185_extrait.json` | 8 observations de `api.insee.fr/melodi/data/DS_BPE?GEO=COM-38185&BPE_MEASURE=FACILITIES&TIME_PERIOD=2025` |
 | `atlas_effectifs_extrait.json` | `data.enseignementsup-recherche.gouv.fr/…/fr-esr-atlas_regional-effectifs-d-etudiants-inscrits/exports/json?where=rentree='2025' and niveau_geo='COMMUNE' and geo_id in (…)&group_by=…` (Paris 5e et 6e, Sevenans, Ajaccio) |
+| `offre_formations_extrait.json` | 6 lignes de `data.education.gouv.fr/…/fr-esr-cartographie_formations_parcoursup/exports/json?where=annee="2026"` (Rennes, Saint-Denis de La Réunion, Paris) |
 | `cog_departements_extrait.csv` | 4 lignes de `insee.fr/fr/statistiques/fichier/8377162/v_departement_2025.csv` |
 | `dv3f_prix_35238_extrait.json` | `apidf-preprod.cerema.fr/indicateurs/dv3f/prix/annuel/?code=35238&echelle=communes` : années 2024-2025, champs des appartements |
 | `dv3f_prix_01185_extrait.json` | même requête pour 01185 (studios sous le secret statistique), année 2025 |

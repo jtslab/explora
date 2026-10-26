@@ -54,13 +54,13 @@ flowchart LR
 | Brique | État |
 | --- | --- |
 | Client HTTP commun, cache, rate-limit, retry | fait, testé |
-| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, prix DV3F (Cerema), vœux Parcoursup, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
+| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, prix DV3F (Cerema), vœux Parcoursup, cartographie des formations, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
 | Indicateurs (rendement, tension, vitalité) et score 4 axes | fait, testé |
 | Job d'ingestion : indicateurs et scores des 400 villes, export GeoJSON, relance mensuelle | fait ([docs/ingestion.md](docs/ingestion.md)) |
 | API : `/health`, `/sources`, `/communes/{code_insee}`, `/etudiant/villes` (pondération en paramètres) | fait |
+| Site : carte MapLibre, pondération réglable, une page SEO par ville | maquette, sur données de démo |
 | Adaptateurs SIRENE (vitalité commerciale), GTFS/GBFS, qualité de l'air | à faire |
 | Chargement PostGIS (l'export est pour l'instant un GeoJSON versionné) | à faire |
-| Front cartographique et pages ville | à faire |
 
 Les sources et leurs endpoints sont décrits dans [docs/sources.md](docs/sources.md), la
 méthode de sélection des villes dans [docs/selection-villes.md](docs/selection-villes.md), le calcul
@@ -85,6 +85,38 @@ docker compose up --build
 Puis <http://localhost:8000/docs>.
 
 Qualité : `uv run ruff check . && uv run ruff format --check . && uv run mypy`.
+
+## Site (maquette)
+
+Le site est statique : `explora.site.generer` lit l'export GeoJSON du job d'ingestion
+(contrat dans `src/explora/site/donnees.py`) et produit la carte, une page par ville
+(« Logement étudiant à [ville] : loyers, prix, vie étudiante »), le sitemap et le
+`robots.txt`. La pondération des quatre axes est recalculée dans le navigateur.
+
+```bash
+uv run python -m explora.site.generer --sortie dist/site   # données de démo par défaut
+python -m http.server -d dist/site 8001                     # puis http://localhost:8001
+```
+
+- `web/templates` : gabarits Jinja ; `web/assets` : CSS et JS sans build (MapLibre GL 4.7.1
+  et polices chargés depuis unpkg et Google Fonts ; à héberger soi-même avant la mise en
+  production, notamment pour les polices).
+- `web/data/villes.demo.geojson` : les 400 vraies villes, leurs vrais effectifs et
+  formations, et des indicateurs **fictifs** (badge « démo » sur chaque valeur, pages en
+  `noindex`). Régénération : `uv run python -m explora.site.demo`.
+- `web/data/formations.json` : les ~22 000 formations post-bac (session 2026) des villes,
+  données **réelles** de la cartographie des formations du MESR. Elles alimentent la
+  recherche par formation sur la carte et la liste des formations de chaque fiche ville.
+  Régénération : `uv run python -m explora.site.formations`.
+- `web/data/metiers.json` : les métiers (codes ROME) visés par chaque formation, d'après le
+  Répertoire national des certifications professionnelles (France Compétences, export sur
+  data.gouv.fr, licence ouverte). Les secteurs d'activité sont les 14 grands domaines du
+  ROME. Environ 84 % des formations sont rattachées ; les filières généralistes (CPGE,
+  écoles d'ingénieurs, PASS...) n'ont pas de fiche métier. Régénération :
+  `uv run python -m explora.site.metiers --rncp export-fiches-rncp-v4-1-AAAA-MM-JJ.zip`.
+- Fond de carte : Plan IGN (Géoplateforme, WMTS), désaturé.
+- Démo publiée par `.github/workflows/pages.yml` à chaque merge sur `main`
+  (activer Settings > Pages > Source « GitHub Actions »).
 
 ## Contribuer
 

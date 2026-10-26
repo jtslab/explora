@@ -8,6 +8,7 @@ from explora.adapters.geocodage import GeocodageAdapter
 from explora.adapters.georisques import GeorisquesAdapter
 from explora.adapters.insee_melodi import InseeMelodiAdapter
 from explora.adapters.loyers import LoyersAdapter
+from explora.adapters.offre_formations import OffreFormationsAdapter
 from explora.adapters.residences_etudiantes import ResidencesEtudiantesAdapter
 from explora.adapters.voeux_formations import VoeuxFormationsAdapter
 
@@ -20,6 +21,7 @@ ALL_ADAPTERS = (
     GeorisquesAdapter,
     InseeMelodiAdapter,
     LoyersAdapter,
+    OffreFormationsAdapter,
     ResidencesEtudiantesAdapter,
     VoeuxFormationsAdapter,
 )
@@ -34,6 +36,7 @@ __all__ = [
     "GeorisquesAdapter",
     "InseeMelodiAdapter",
     "LoyersAdapter",
+    "OffreFormationsAdapter",
     "ResidencesEtudiantesAdapter",
     "VoeuxFormationsAdapter",
 ]

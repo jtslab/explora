@@ -56,6 +56,29 @@ class LoyerCommune(BaseModel):
         return self.r2_ajuste >= 0.5 and self.nb_observations >= 30
 
 
+class OffreFormation(BaseModel):
+    """Formation post-bac proposée pour une session, avec sa commune d'implantation."""
+
+    session: str
+    code: str
+    """Identifiant de la formation dans la source (stable d'une année sur l'autre)."""
+    code_uai: str
+    etablissement: str
+    secteur: str | None = None
+    """« Publics » ou « Privés … » tel que publié."""
+    types: list[str] = Field(default_factory=list)
+    """Types de formation (BTS, BUT, Licence, Études de santé...)."""
+    mentions: list[str] = Field(default_factory=list)
+    """Mentions ou spécialités, ex. « BTS - Tourisme », « L1 - Droit »."""
+    libelle: str = ""
+    apprentissage: bool = False
+    commune: str
+    """Libellé de la commune (Paris, Lyon et Marseille sans arrondissement)."""
+    departement: str
+    """Libellé du département (pas de code dans la source)."""
+    point: Point | None = None
+
+
 class FormationVoeux(BaseModel):
     """Formation post-bac avec ses vœux et sa capacité d'accueil (une session)."""
 
