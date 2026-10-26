@@ -1,0 +1,53 @@
+{
+    "total_count": 260,
+    "results": [
+        {
+            "session": "2025",
+            "cod_uai": "0383098L",
+            "g_ea_lib_vx": "La Pr\u00e9pa des INP - Groupe INP - Grenoble",
+            "ville_etab": "Saint-Martin-d'H\u00e8res",
+            "dep": "38",
+            "fili": "Ecole d'Ing\u00e9nieur",
+            "lib_for_voe_ins": "Formation d'ing\u00e9nieur Bac + 5 - Bac g\u00e9n\u00e9ral",
+            "capa_fin": 115,
+            "voe_tot": 3540,
+            "acc_tot": 113,
+            "g_olocalisation_des_formations": {
+                "lon": 5.7652,
+                "lat": 45.1951
+            }
+        },
+        {
+            "session": "2025",
+            "cod_uai": "0382881A",
+            "g_ea_lib_vx": "Polytech Grenoble",
+            "ville_etab": "Saint-Martin-d'H\u00e8res",
+            "dep": "38",
+            "fili": "Ecole d'Ing\u00e9nieur",
+            "lib_for_voe_ins": "Formation d'ing\u00e9nieur Bac + 5 - Bac g\u00e9n\u00e9ral",
+            "capa_fin": 135,
+            "voe_tot": 10959,
+            "acc_tot": 158,
+            "g_olocalisation_des_formations": {
+                "lon": 5.75424,
+                "lat": 45.1849
+            }
+        },
+        {
+            "session": "2025",
+            "cod_uai": "0381516S",
+            "g_ea_lib_vx": "IUT 1 GRENOBLE",
+            "ville_etab": "Saint-Martin-d'H\u00e8res",
+            "dep": "38",
+            "fili": "Ecole d'Ing\u00e9nieur",
+            "lib_for_voe_ins": "Formation d'ing\u00e9nieur Bac + 5 - bac STI2D",
+            "capa_fin": 6,
+            "voe_tot": 192,
+            "acc_tot": 5,
+            "g_olocalisation_des_formations": {
+                "lon": 5.77475,
+                "lat": 45.1986
+            }
+        }
+    ]
+}

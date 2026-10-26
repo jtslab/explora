@@ -6,7 +6,15 @@ des sources. Ils vérifient que les adaptateurs comprennent toujours les vraies 
 
 import pytest
 
-from explora.adapters import GeoApiAdapter, GeocodageAdapter, GeorisquesAdapter, LoyersAdapter
+from explora.adapters import (
+    GeoApiAdapter,
+    GeocodageAdapter,
+    GeorisquesAdapter,
+    InseeMelodiAdapter,
+    LoyersAdapter,
+    ResidencesEtudiantesAdapter,
+    VoeuxFormationsAdapter,
+)
 from explora.core.config import get_settings
 from explora.core.http import RetryPolicy, SourceClient
 
@@ -21,7 +29,7 @@ def client(source: str, base_url: str) -> SourceClient:
     return SourceClient(
         source,
         base_url,
-        retry=RetryPolicy(max_attempts=6),
+        retry=RetryPolicy(max_attempts=10),
         timeout_s=60,
         user_agent=settings.http_user_agent,
     )
@@ -58,3 +66,31 @@ async def test_loyers() -> None:
     assert par_code["01001"].nom == "L'Abergement-Clémenciat"
     for code in ("75056", "69123", "13055", "35238"):
         assert par_code[code].fiable, code
+
+
+async def test_voeux_formations() -> None:
+    async with client("voeux-formations", get_settings().voeux_formations_url) as c:
+        formations = await VoeuxFormationsAdapter(c).formations("38")
+    assert len(formations) > 200
+    assert {"BTS", "BUT", "Licence"} <= {f.filiere for f in formations}
+    assert any(f.ville == "Grenoble" and f.capacite for f in formations)
+
+
+async def test_residences_etudiantes() -> None:
+    async with client("residences-etudiantes", get_settings().residences_etudiantes_url) as c:
+        residences = await ResidencesEtudiantesAdapter(c).residences("grenoble")
+    assert len(residences) > 30
+    assert all(r.point for r in residences)
+    avec_places = [r for r in residences if r.places_estimees]
+    assert len(avec_places) > len(residences) / 2
+
+
+async def test_insee_melodi() -> None:
+    async with client("insee-melodi", get_settings().insee_melodi_url) as c:
+        adapter = InseeMelodiAdapter(c)
+        logements = await adapter.logements("38185")
+        equipements = await adapter.equipements("38185", "2025")
+    assert logements is not None and logements.annee >= "2022"
+    assert logements.locataires and logements.residences_principales
+    assert 0.4 < logements.locataires / logements.residences_principales < 0.8
+    assert equipements["A504"] > 100  # restaurants
