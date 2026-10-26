@@ -400,7 +400,9 @@ def _geojson_carte(export: ExportVilles, villes: list[Ville]) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--donnees", type=Path, default=Path("web/data/villes.demo.geojson"))
+    parser.add_argument(
+        "--donnees", type=Path, default=Path("data/export/villes_etudiantes.geojson")
+    )
     parser.add_argument("--web", type=Path, default=Path("web"))
     parser.add_argument("--sortie", type=Path, default=Path("dist/site"))
     parser.add_argument("--formations", type=Path, default=Path("web/data/formations.json"))

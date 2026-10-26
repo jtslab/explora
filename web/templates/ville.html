@@ -6,7 +6,7 @@
 {% block description %}{{ p.nom }} ({{ p.departement }}) : {{ p.effectif_etudiants|nombre }} étudiants, loyer estimé {{ i.loyer_m2|nombre(1, "€/m²") }}, prix {{ i.prix_m2|nombre(0, "€/m²") }}, formations, transports et vie étudiante. Score sur 4 axes et comparaison avec {{ total - 1 }} autres villes.{% endblock %}
 {% block canonique %}{{ base_url }}/villes/{{ v.slug }}/{% endblock %}
 
-{% macro demo(id) %}{% if id in p.indicateurs_demo %}<span class="demo" title="Valeur fictive, en attendant les vraies données">démo</span>{% endif %}{% endmacro %}
+{% macro demo(id) %}{% if id in p.indicateurs_demo %}<span class="demo" title="Valeur fictive, en attendant les vraies données">démo</span>{% elif id in meta.indicateurs_manquants %}<span class="demo a-venir" title="Source pas encore branchée, l'indicateur ne compte pas dans le score">à venir</span>{% endif %}{% endmacro %}
 {% macro chiffre(id, libelle, valeur, aide="") %}
 <div class="chiffre">
   <span class="lib">{{ libelle }} {{ demo(id) }}</span>
@@ -188,6 +188,9 @@
       <li>Fond de carte © IGN, Géoplateforme.</li>
     </ul>
     <p>Explora est un outil indépendant, sans lien avec les organismes publics dont il réutilise les données ouvertes. Données mises à jour le {{ meta.genere_le.strftime("%d/%m/%Y") }}.</p>
+    {% if meta.indicateurs_manquants and not meta.demo %}
+    <p>Les indicateurs marqués <span class="demo a-venir">à venir</span> n'ont pas encore de source branchée&nbsp;: ils ne comptent pas dans le score.</p>
+    {% endif %}
     {% if meta.demo %}
     <p><strong>Maquette&nbsp;:</strong> les valeurs marquées <span class="demo">démo</span> sont fictives. Les effectifs et les formations sont réels.</p>
     {% endif %}

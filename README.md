@@ -86,7 +86,7 @@ Puis <http://localhost:8000/docs>.
 
 Qualité : `uv run ruff check . && uv run ruff format --check . && uv run mypy`.
 
-## Site (maquette)
+## Site
 
 Le site est statique : `explora.site.generer` lit l'export GeoJSON du job d'ingestion
 (contrat dans `src/explora/site/donnees.py`) et produit la carte, une page par ville
@@ -94,16 +94,19 @@ Le site est statique : `explora.site.generer` lit l'export GeoJSON du job d'inge
 `robots.txt`. La pondération des quatre axes est recalculée dans le navigateur.
 
 ```bash
-uv run python -m explora.site.generer --sortie dist/site   # données de démo par défaut
+uv run python -m explora.site.generer --sortie dist/site   # export réel par défaut
 python -m http.server -d dist/site 8001                     # puis http://localhost:8001
 ```
 
 - `web/templates` : gabarits Jinja ; `web/assets` : CSS et JS sans build (MapLibre GL 4.7.1
   et polices chargés depuis unpkg et Google Fonts ; à héberger soi-même avant la mise en
   production, notamment pour les polices).
-- `web/data/villes.demo.geojson` : les 400 vraies villes, leurs vrais effectifs et
-  formations, et des indicateurs **fictifs** (badge « démo » sur chaque valeur, pages en
-  `noindex`). Régénération : `uv run python -m explora.site.demo`.
+- Données : `data/export/villes_etudiantes.geojson`, l'export du job d'ingestion. Les
+  indicateurs sans source branchée (`metadata.indicateurs_manquants`) s'affichent « n.d. »
+  avec un badge « à venir ». Publié sur GitHub Pages à chaque merge sur `main`.
+- `web/data/villes.demo.geojson` : jeu de démo (vrais effectifs et formations, autres
+  indicateurs **fictifs**, pages en `noindex`), via `--donnees`. Régénération :
+  `uv run python -m explora.site.demo`.
 - `web/data/formations.json` : les ~22 000 formations post-bac (session 2026) des villes,
   données **réelles** de la cartographie des formations du MESR. Elles alimentent la
   recherche par formation sur la carte et la liste des formations de chaque fiche ville.
