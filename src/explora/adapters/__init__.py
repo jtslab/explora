@@ -1,6 +1,7 @@
 """Adaptateurs, un par source de données publiques."""
 
 from explora.adapters.cog import CogAdapter
+from explora.adapters.dv3f import Dv3fAdapter
 from explora.adapters.effectifs_etudiants import EffectifsEtudiantsAdapter
 from explora.adapters.geo_api import GeoApiAdapter
 from explora.adapters.geocodage import GeocodageAdapter
@@ -12,6 +13,7 @@ from explora.adapters.voeux_formations import VoeuxFormationsAdapter
 
 ALL_ADAPTERS = (
     CogAdapter,
+    Dv3fAdapter,
     EffectifsEtudiantsAdapter,
     GeoApiAdapter,
     GeocodageAdapter,
@@ -25,6 +27,7 @@ ALL_ADAPTERS = (
 __all__ = [
     "ALL_ADAPTERS",
     "CogAdapter",
+    "Dv3fAdapter",
     "EffectifsEtudiantsAdapter",
     "GeoApiAdapter",
     "GeocodageAdapter",

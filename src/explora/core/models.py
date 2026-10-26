@@ -113,3 +113,14 @@ class Departement(BaseModel):
     nom: str
     chef_lieu: str
     """Code INSEE de la préfecture."""
+
+
+class PrixImmobilierCommune(BaseModel):
+    """Prix médian au m² des appartements vendus dans l'année (indicateurs DV3F du Cerema)."""
+
+    code_insee: str
+    annee: str
+    typologie: str
+    """`t1` (appartements d'une pièce) ou `appartements` (toutes tailles, en repli)."""
+    prix_m2: float
+    nb_transactions: int

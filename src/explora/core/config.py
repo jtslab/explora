@@ -1,6 +1,7 @@
 """Configuration lue depuis l'environnement (voir `.env.example`)."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,6 +14,7 @@ class Settings(BaseSettings):
     http_user_agent: str = "explora/0.1 (+https://github.com/jtslab/explora)"
     http_timeout_s: float = 15.0
     cache_ttl_s: int = 24 * 3600
+    export_villes_etudiantes: Path = Path("data/export/villes_etudiantes.geojson")
 
     geo_api_url: str = "https://geo.api.gouv.fr"
     geocodage_url: str = "https://data.geopf.fr/geocodage"
@@ -23,6 +25,8 @@ class Settings(BaseSettings):
     insee_melodi_url: str = "https://api.insee.fr/melodi"
     effectifs_etudiants_url: str = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1"
     cog_url: str = "https://www.insee.fr"
+    dv3f_url: str = "https://apidf-preprod.cerema.fr"
+    carte_loyers_url: str = "https://www.data.gouv.fr"
 
 
 @lru_cache

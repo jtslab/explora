@@ -1,0 +1,49 @@
+name: Ingestion villes étudiantes
+
+# Recalcule les indicateurs et les scores des villes étudiantes à partir des sources
+# publiques, puis publie le GeoJSON en artefact. Mettre à jour `data/export` reste une
+# décision humaine : télécharger l'artefact et l'intégrer par pull request.
+on:
+  schedule:
+    - cron: "0 3 2 * *" # le 2 de chaque mois, 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingestion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Installer Python et les dépendances
+        run: uv sync --frozen --no-dev --python 3.12
+      - name: Restaurer le cache des réponses
+        uses: actions/cache@v4
+        with:
+          path: data/cache/ingestion
+          key: ingestion-${{ github.run_id }}
+          restore-keys: ingestion-
+      - name: Collecter et calculer les scores
+        run: uv run --no-dev python -m explora.modules.etudiant.ingestion 2>&1 | tee ingestion.log
+      - name: Résumé
+        if: always()
+        run: |
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 1 ingestion.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: villes-etudiantes-geojson
+          path: |
+            data/export/villes_etudiantes.geojson
+            ingestion.log
+          retention-days: 90

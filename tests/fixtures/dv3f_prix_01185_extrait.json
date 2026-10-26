@@ -1,0 +1,43 @@
+{
+ "count": 1,
+ "next": null,
+ "previous": null,
+ "results": [
+  {
+   "annee": "2025",
+   "echelle": "communes",
+   "code": "01185",
+   "libelle": "Plateau d'Hauteville",
+   "nbtrans_cod121": 12,
+   "valeurfonc_sum_cod121": 1061500.0,
+   "valeurfonc_q25_cod121": 86500.0,
+   "valeurfonc_median_cod121": 92500.0,
+   "valeurfonc_q75_cod121": 95500.0,
+   "pxm2_q25_cod121": 774.035,
+   "pxm2_median_cod121": 1250.975,
+   "pxm2_q75_cod121": 1488.6325000000002,
+   "sbati_sum_cod121": 995.0,
+   "sbati_median_cod121": 79.5,
+   "nbtrans_cod121x1": 4,
+   "valeurfonc_sum_cod121x1": null,
+   "valeurfonc_q25_cod121x1": null,
+   "valeurfonc_median_cod121x1": null,
+   "valeurfonc_q75_cod121x1": null,
+   "pxm2_q25_cod121x1": null,
+   "pxm2_median_cod121x1": null,
+   "pxm2_q75_cod121x1": null,
+   "sbati_sum_cod121x1": null,
+   "sbati_median_cod121x1": null,
+   "nbtrans_cod121x2": 0,
+   "valeurfonc_sum_cod121x2": null,
+   "valeurfonc_q25_cod121x2": null,
+   "valeurfonc_median_cod121x2": null,
+   "valeurfonc_q75_cod121x2": null,
+   "pxm2_q25_cod121x2": null,
+   "pxm2_median_cod121x2": null,
+   "pxm2_q75_cod121x2": null,
+   "sbati_sum_cod121x2": null,
+   "sbati_median_cod121x2": null
+  }
+ ]
+}

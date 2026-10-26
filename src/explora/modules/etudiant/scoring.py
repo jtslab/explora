@@ -94,18 +94,24 @@ def scorer(
             axe: (sum(notes) / len(notes) if notes else None)
             for axe, notes in notes_par_axe.items()
         }
-        total_poids = sum(poids.get(axe, 0.0) for axe in Axe)
-        poids_couverts = sum(poids.get(a, 0.0) for a, note in axes.items() if note is not None)
-        global_ = (
-            sum(poids.get(a, 0.0) * note for a, note in axes.items() if note is not None)
-            / poids_couverts
-            if poids_couverts
-            else None
-        )
+        global_, couverture = score_global(axes, poids)
         resultats[code] = ScoreVille(
-            code_insee=code,
-            global_=global_,
-            axes=axes,
-            couverture=poids_couverts / total_poids,
+            code_insee=code, global_=global_, axes=axes, couverture=couverture
         )
     return resultats
+
+
+def score_global(
+    axes: Mapping[Axe, float | None], poids: Mapping[Axe, float] = POIDS_PAR_DEFAUT
+) -> tuple[float | None, float]:
+    """Moyenne pondérée des axes disponibles, et part des poids couverte.
+
+    Assez légère pour être rejouée à la volée avec la pondération de l'utilisateur.
+    """
+    _valider_poids(poids)
+    total_poids = sum(poids.get(axe, 0.0) for axe in Axe)
+    poids_couverts = sum(poids.get(a, 0.0) for a, note in axes.items() if note is not None)
+    if not poids_couverts:
+        return None, 0.0
+    total = sum(poids.get(a, 0.0) * note for a, note in axes.items() if note is not None)
+    return total / poids_couverts, poids_couverts / total_poids
