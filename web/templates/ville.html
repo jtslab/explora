@@ -116,13 +116,16 @@
             <a href="{{ f.url }}" rel="noopener" target="_blank">{{ f.mention }}</a>
             <span class="etab">{{ f.etablissement }}</span>
             <span class="tags">{{ "public" if f.public else "privé" }}{% if f.apprentissage %} · apprentissage possible{% endif %}</span>
+            {% if f.metiers %}
+            <span class="metiers">Métiers visés : {{ f.metiers[:4]|join(", ") }}{% if f.metiers|length > 4 %}…{% endif %}</span>
+            {% endif %}
           </li>
           {% endfor %}
         </ul>
       </details>
       {% endfor %}
       <p class="aucune" hidden>Aucune formation ne correspond à ce filtre.</p>
-      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.</p>
+      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.{% if source_metiers %} Les métiers visés viennent de la fiche du diplôme au répertoire national des certifications ; les formations généralistes (prépas, écoles d'ingénieurs, PASS) n'y sont pas rattachées.{% endif %}</p>
     </div>
     {% endif %}
   </section>
@@ -178,6 +181,9 @@
       {% endfor %}
       {% if session_formations %}
       <li>Cartographie des formations post-bac, MESR, session {{ session_formations }} (Licence Ouverte 2.0)</li>
+      {% endif %}
+      {% if source_metiers %}
+      <li>Métiers visés : Répertoire national des certifications professionnelles, France Compétences ({{ source_metiers }}, Licence Ouverte 2.0), codes ROME de France Travail</li>
       {% endif %}
       <li>Fond de carte © IGN, Géoplateforme.</li>
     </ul>

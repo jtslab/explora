@@ -19,6 +19,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoes
 
 from explora.modules.etudiant.scoring import Axe
 from explora.site import formations as fm
+from explora.site import metiers as mt
 from explora.site.donnees import ExportVilles, FeatureVille, ProprietesVille, charger, slugs
 
 FORMATIONS = {
@@ -228,10 +229,14 @@ class FormationVille:
     public: bool
     apprentissage: bool
     url: str
+    metiers: tuple[str, ...] = ()
+    """Métiers visés d'après le RNCP (libellés ROME)."""
 
 
 def formations_par_type(
-    index: fm.IndexFormations | None, code_insee: str
+    index: fm.IndexFormations | None,
+    code_insee: str,
+    metiers: mt.IndexMetiers | None = None,
 ) -> list[tuple[str, list[FormationVille]]]:
     """Formations d'une ville groupées par type (BTS, Licence...), les plus fournis d'abord."""
     if index is None:
@@ -240,6 +245,7 @@ def formations_par_type(
     for o in index.offres.get(code_insee, []):
         mention = index.mentions[o.mention]
         etab = index.etablissements.get(o.uai)
+        corresp = metiers.mentions.get(mention.libelle) if metiers else None
         groupes[index.types[mention.type]].append(
             FormationVille(
                 mention=mention.libelle,
@@ -247,6 +253,9 @@ def formations_par_type(
                 public=bool(etab and etab.secteur == "Publics"),
                 apprentissage=o.apprentissage,
                 url=fm.URL_FICHE.format(code=o.code),
+                metiers=tuple(metiers.metiers[c] for c in corresp.romes)
+                if metiers and corresp
+                else (),
             )
         )
     return sorted(
@@ -258,14 +267,28 @@ def formations_par_type(
     )
 
 
-def _index_carte(index: fm.IndexFormations) -> str:
-    """Mentions et villes qui les proposent, pour la recherche côté navigateur."""
+def _index_carte(index: fm.IndexFormations, metiers: mt.IndexMetiers | None = None) -> str:
+    """Mentions et villes qui les proposent, métiers et secteurs, pour la recherche."""
     villes = index.villes_par_mention()
+    par_metier: dict[str, list[int]] = defaultdict(list)
+    if metiers:
+        for i, m in enumerate(index.mentions):
+            corresp = metiers.mentions.get(m.libelle)
+            for code in corresp.romes if corresp else []:
+                par_metier[code].append(i)
     return json.dumps(
         {
             "session": index.session,
             "types": index.types,
             "mentions": [[m.libelle, m.type, villes[i]] for i, m in enumerate(index.mentions)],
+            # [code ROME, libellé, indices des mentions] ; le secteur est la 1re lettre du code.
+            "metiers": [
+                [code, metiers.metiers[code], mentions]
+                for code, mentions in sorted(par_metier.items())
+            ]
+            if metiers
+            else [],
+            "secteurs": sorted(metiers.domaines.items()) if metiers else [],
         },
         ensure_ascii=False,
         separators=(",", ":"),
@@ -278,6 +301,7 @@ def generer(
     sortie: Path,
     base_url: str,
     formations: fm.IndexFormations | None = None,
+    metiers: mt.IndexMetiers | None = None,
 ) -> list[Path]:
     """Écrit le site dans `sortie` et renvoie les pages produites."""
     base_url = base_url.rstrip("/")
@@ -296,13 +320,14 @@ def generer(
     )
     if formations is not None:
         (sortie / "data" / "formations-index.json").write_text(
-            _index_carte(formations), encoding="utf-8"
+            _index_carte(formations, metiers), encoding="utf-8"
         )
     commun = {
         "meta": export.metadata,
         "base_url": base_url,
         "total": len(villes),
         "session_formations": formations.session if formations else None,
+        "source_metiers": metiers.source if metiers else None,
     }
 
     pages = [sortie / "index.html"]
@@ -323,7 +348,7 @@ def generer(
                 racine="../../",
                 v=v,
                 proches=[(o, distance_km(v, o)) for o in proches],
-                formations=formations_par_type(formations, v.p.code_insee),
+                formations=formations_par_type(formations, v.p.code_insee, metiers),
                 **commun,
             ),
             encoding="utf-8",
@@ -379,10 +404,14 @@ def main() -> None:
     parser.add_argument("--web", type=Path, default=Path("web"))
     parser.add_argument("--sortie", type=Path, default=Path("dist/site"))
     parser.add_argument("--formations", type=Path, default=Path("web/data/formations.json"))
+    parser.add_argument("--metiers", type=Path, default=Path("web/data/metiers.json"))
     parser.add_argument("--base-url", default="https://explora.app")
     args = parser.parse_args()
     index = fm.charger(args.formations) if args.formations.exists() else None
-    pages = generer(charger(args.donnees), args.web, args.sortie, args.base_url, index)
+    index_metiers = mt.charger(args.metiers) if args.metiers.exists() else None
+    pages = generer(
+        charger(args.donnees), args.web, args.sortie, args.base_url, index, index_metiers
+    )
     print(f"{len(pages)} pages écrites dans {args.sortie}")
 
 

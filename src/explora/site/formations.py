@@ -23,6 +23,7 @@ from explora.core.http import RetryPolicy, SourceClient
 from explora.core.models import OffreFormation
 
 SESSION = "2026"
+APOSTROPHE = chr(0x2019)  # apostrophe typographique
 URL_FICHE = (
     "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation"
     "?g_ta_cod={code}&typeBac=0&originePc=0"
@@ -67,7 +68,8 @@ class IndexFormations(BaseModel):
 
 
 def normaliser(texte: str) -> str:
-    ascii_ = unicodedata.normalize("NFKD", texte.replace("œ", "oe").replace("Œ", "Oe"))
+    texte = texte.replace("œ", "oe").replace("Œ", "Oe").replace(APOSTROPHE, "'")
+    ascii_ = unicodedata.normalize("NFKD", texte)
     return re.sub(r"[^a-z0-9]+", " ", ascii_.encode("ascii", "ignore").decode().lower()).strip()
 
 

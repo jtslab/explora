@@ -105,6 +105,12 @@ python -m http.server -d dist/site 8001                     # puis http://localh
   données **réelles** de la cartographie des formations du MESR. Elles alimentent la
   recherche par formation sur la carte et la liste des formations de chaque fiche ville.
   Régénération : `uv run python -m explora.site.formations`.
+- `web/data/metiers.json` : les métiers (codes ROME) visés par chaque formation, d'après le
+  Répertoire national des certifications professionnelles (France Compétences, export sur
+  data.gouv.fr, licence ouverte). Les secteurs d'activité sont les 14 grands domaines du
+  ROME. Environ 84 % des formations sont rattachées ; les filières généralistes (CPGE,
+  écoles d'ingénieurs, PASS...) n'ont pas de fiche métier. Régénération :
+  `uv run python -m explora.site.metiers --rncp export-fiches-rncp-v4-1-AAAA-MM-JJ.zip`.
 - Fond de carte : Plan IGN (Géoplateforme, WMTS), désaturé.
 - Démo publiée par `.github/workflows/pages.yml` à chaque merge sur `main`
   (activer Settings > Pages > Source « GitHub Actions »).
