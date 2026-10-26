@@ -54,15 +54,17 @@ flowchart LR
 | Brique | État |
 | --- | --- |
 | Client HTTP commun, cache, rate-limit, retry | fait, testé |
-| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, vœux Parcoursup, cartographie des formations, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
+| Adaptateurs : découpage administratif, géocodage, Géorisques, carte des loyers, prix DV3F (Cerema), vœux Parcoursup, cartographie des formations, résidences étudiantes, INSEE Melodi (BPE, logements) | fait, testé avec API simulées et en réel |
 | Indicateurs (rendement, tension, vitalité) et score 4 axes | fait, testé |
-| API : `/health`, `/sources`, `/communes/{code_insee}` | fait |
-| Adaptateurs effectifs ESR, DVF, SIRENE, GTFS/GBFS, qualité de l'air | à faire |
-| Schéma PostGIS et job d'ingestion | à faire |
+| Job d'ingestion : indicateurs et scores des 400 villes, export GeoJSON, relance mensuelle | fait ([docs/ingestion.md](docs/ingestion.md)) |
+| API : `/health`, `/sources`, `/communes/{code_insee}`, `/etudiant/villes` (pondération en paramètres) | fait |
 | Site : carte MapLibre, pondération réglable, une page SEO par ville | maquette, sur données de démo |
+| Adaptateurs SIRENE (vitalité commerciale), GTFS/GBFS, qualité de l'air | à faire |
+| Chargement PostGIS (l'export est pour l'instant un GeoJSON versionné) | à faire |
 
 Les sources et leurs endpoints sont décrits dans [docs/sources.md](docs/sources.md), la
-méthode de sélection des villes dans [docs/selection-villes.md](docs/selection-villes.md)
+méthode de sélection des villes dans [docs/selection-villes.md](docs/selection-villes.md), le calcul
+des indicateurs et des scores dans [docs/ingestion.md](docs/ingestion.md)
 et les choix techniques dans [docs/adr](docs/adr).
 
 ## Démarrer
@@ -74,6 +76,7 @@ cp .env.example .env
 uv sync
 uv run pytest                 # tests, toutes les API sont simulées
 uv run pytest -m live         # appels réels aux API publiques (réseau requis)
+uv run python -m explora.modules.etudiant.ingestion   # recalcule data/export (réseau requis)
 uv run uvicorn explora.api.main:app --reload
 # ou, avec PostGIS :
 docker compose up --build

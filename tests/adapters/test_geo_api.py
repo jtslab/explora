@@ -6,6 +6,7 @@ import respx
 
 from explora.adapters.geo_api import GeoApiAdapter
 from explora.core.http import SourceClient
+from explora.core.models import Point
 from tests.conftest import fixture_json
 
 RENNES = fixture_json("geo_api_commune_35238.json")
@@ -42,3 +43,19 @@ async def test_toutes_les_communes(make_client: Callable[..., SourceClient]) -> 
         communes = await GeoApiAdapter(client).communes()
     assert [c.code_insee for c in communes] == ["35238"]
     assert "population" in route.calls.last.request.url.params["fields"]
+
+
+@respx.mock
+async def test_code_au_point(make_client: Callable[..., SourceClient]) -> None:
+    route = respx.get("https://geo.test/communes").respond(json=[{"code": "74010"}])
+    async with make_client("https://geo.test") as client:
+        code = await GeoApiAdapter(client).code_au_point(Point(lon=6.16, lat=45.92))
+    assert code == "74010"
+    assert route.calls.last.request.url.params["lat"] == "45.92"
+
+
+@respx.mock
+async def test_point_hors_de_france(make_client: Callable[..., SourceClient]) -> None:
+    respx.get("https://geo.test/communes").respond(json=[])
+    async with make_client("https://geo.test") as client:
+        assert await GeoApiAdapter(client).code_au_point(Point(lon=0, lat=0)) is None

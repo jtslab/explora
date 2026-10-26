@@ -15,6 +15,7 @@ pour les sources qui ont un adaptateur). « OK » = appel réel réussi et forma
 | Études | InserSup | même API MESR, jeu `fr-esr-insersup` | non | OK | à faire |
 | Budget | Carte des loyers 2025 (ANIL) | 4 CSV sur [data.gouv.fr](https://www.data.gouv.fr/datasets/693aa2feed1bf4da603faa49/) : appartement, T1-T2, T3+, maison | non | OK (voir encodage et Paris/Lyon/Marseille) | `loyers` (test live) |
 | Budget | DVF (Cerema, API Données foncières) | `apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=&codtypbien=121&anneemut_min=` | non | OK (lent, ~1,3 s) | à faire |
+| Budget | Indicateurs de prix DV3F (Cerema) | `apidf-preprod.cerema.fr/indicateurs/dv3f/prix/annuel/?code={insee}&echelle=communes` : médianes de prix au m² par année et typologie (`cod121` appartements, `cod121x1` une pièce) | non | OK (~2,5 s, 2010-2025 ; médiane masquée sous ~11 ventes) | `dv3f` |
 | Budget | Logements étudiants (CNOUS) | [data.gouv.fr](https://www.data.gouv.fr/datasets/logements-etudiants/) : 26 flux XML `http://webservices-v2.crous-mobile.fr/feed/{flux}/{flux}-logement.xml` | non | OK en HTTP seulement : 828 résidences géolocalisées ; nombre de places **estimé** pour 496 (60 %) | `residences_etudiantes` (test live) |
 | Vie | BPE 2025 (INSEE) | API Melodi `api.insee.fr/melodi/data/DS_BPE?GEO=COM-{code}` (ou ZIP national `www.insee.fr/fr/statistiques/fichier/8217527/DS_BPE_CSV_FR.zip`, 150 Mo décompressé) | non | OK : ~200 types d'équipements par commune en un appel | `insee_melodi` (test live) |
 | Vie | API Recherche d'entreprises / SIRENE | `recherche-entreprises.api.gouv.fr/search?activite_principale=&code_commune=&etat_administratif=A\|C` | non | OK | à faire |
@@ -45,6 +46,10 @@ pour les sources qui ont un adaptateur). « OK » = appel réel réussi et forma
 - **DVF Cerema** : `valeurfonc` et `sbati` sont des chaînes ; le lien `next` de pagination est en
   `http://` (à réécrire en https). Le domaine est une préproduction : prévoir le repli sur les
   fichiers DVF géolocalisés.
+- **Prix au m²** : les « Statistiques DVF » d'Etalab (un CSV national) sont hébergées sur
+  `data-pipeline-open.s3.sbg.io.cloud.ovh.net`, refusé par la passerelle réseau de
+  l'environnement. Les indicateurs DV3F du Cerema donnent la même information par commune,
+  et par nombre de pièces : c'est la source retenue pour le job d'ingestion.
 - **Recherche d'entreprises** : `etat_administratif` accepte `A` (actif) ou `C` (cessé), pas `F`.
   L'API ne filtre pas par période de création ou de fermeture ; la vitalité commerciale sur 3 ans
   sera plus simple à calculer depuis le stock SIRENE (fichier) que via cette API.
