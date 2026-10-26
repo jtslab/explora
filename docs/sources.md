@@ -5,9 +5,10 @@ pour les sources qui ont un adaptateur). « OK » = appel réel réussi et forma
 
 | Axe | Source | Accès | Clé | Appel réel | Adaptateur |
 | --- | --- | --- | --- | --- | --- |
-| Socle | API Découpage administratif | `https://geo.api.gouv.fr/communes/{code}`, `/departements/{code}/communes` | non | OK | `geo_api` (test live) |
+| Socle | API Découpage administratif | `https://geo.api.gouv.fr/communes/{code}`, `/departements/{code}/communes`, `/communes` (toutes, ~35 000) | non | OK | `geo_api` (test live) |
 | Socle | Géocodage Géoplateforme IGN | `https://data.geopf.fr/geocodage/search` | non | OK | `geocodage` (test live) |
-| Études | Effectifs d'étudiants inscrits (atlas régional, MESR) | API Opendatasoft `data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-atlas_regional-effectifs-d-etudiants-inscrits_agregeables/records` | non | OK : millésimes jusqu'à 2025-26, 1 584 communes avec étudiants en 2024-25, BTS inclus | à faire |
+| Études | Effectifs d'étudiants inscrits (atlas régional, MESR) | API Opendatasoft `data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-atlas_regional-effectifs-d-etudiants-inscrits/exports/json` avec `group_by` (agrégation côté serveur, ~40 s) | non | OK : rentrée 2025, 1 609 communes avec étudiants, BTS inclus ; Paris, Lyon, Marseille par arrondissement | `effectifs_etudiants` (test live), sélection des villes |
+| Socle | Code officiel géographique 2025 (INSEE) | CSV `www.insee.fr/fr/statistiques/fichier/8377162/v_departement_2025.csv` (chef-lieu de chaque département) | non | OK | `cog` (test live) |
 | Études | Principaux établissements (MESR) | même API, jeu `fr-esr-principaux-etablissements-enseignement-superieur` | non | OK, mais seulement 245 grands établissements (pas les lycées à BTS) | à faire |
 | Études | Cartographie des formations Parcoursup | même API, jeu `fr-esr-cartographie_formations_parcoursup` (157 497 lignes, commune + type de formation) | non | OK | à faire |
 | Études | Vœux Parcoursup 2025 | API Opendatasoft `data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-parcoursup/records` (14 252 formations, session 2025) | non | OK : capacité, vœux, admis, filière, coordonnées ; **pas de code INSEE** | `voeux_formations` (test live) |

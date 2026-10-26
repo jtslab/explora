@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # HTTPS renvoie 404 et le port 8080 annoncé sur data.gouv.fr ne répond pas.
     residences_etudiantes_url: str = "http://webservices-v2.crous-mobile.fr"
     insee_melodi_url: str = "https://api.insee.fr/melodi"
+    effectifs_etudiants_url: str = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1"
+    cog_url: str = "https://www.insee.fr"
 
 
 @lru_cache

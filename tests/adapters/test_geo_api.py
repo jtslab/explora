@@ -33,3 +33,12 @@ async def test_communes_du_departement_sans_centre(
         communes = await GeoApiAdapter(client).communes_du_departement("2A")
     assert [c.code_insee for c in communes] == ["2A004"]
     assert communes[0].centre is None
+
+
+@respx.mock
+async def test_toutes_les_communes(make_client: Callable[..., SourceClient]) -> None:
+    route = respx.get("https://geo.test/communes").respond(json=[RENNES])
+    async with make_client("https://geo.test") as client:
+        communes = await GeoApiAdapter(client).communes()
+    assert [c.code_insee for c in communes] == ["35238"]
+    assert "population" in route.calls.last.request.url.params["fields"]

@@ -7,6 +7,8 @@ des sources. Ils vérifient que les adaptateurs comprennent toujours les vraies 
 import pytest
 
 from explora.adapters import (
+    CogAdapter,
+    EffectifsEtudiantsAdapter,
     GeoApiAdapter,
     GeocodageAdapter,
     GeorisquesAdapter,
@@ -94,3 +96,19 @@ async def test_insee_melodi() -> None:
     assert logements.locataires and logements.residences_principales
     assert 0.4 < logements.locataires / logements.residences_principales < 0.8
     assert equipements["A504"] > 100  # restaurants
+
+
+async def test_effectifs_etudiants() -> None:
+    async with client("effectifs-etudiants", get_settings().effectifs_etudiants_url) as c:
+        effectifs = await EffectifsEtudiantsAdapter(c).par_commune("2025")
+    totaux = {e.code_insee: e.effectif for e in effectifs if e.regroupement == "TOTAL"}
+    assert len(totaux) > 1_500
+    assert totaux["35238"] > 50_000
+    assert "75105" in totaux  # Paris par arrondissement
+
+
+async def test_cog() -> None:
+    async with client("cog", get_settings().cog_url) as c:
+        deps = await CogAdapter(c).departements()
+    assert len(deps) == 101
+    assert {d.code: d.chef_lieu for d in deps}["35"] == "35238"

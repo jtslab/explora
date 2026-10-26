@@ -49,3 +49,10 @@ class GeoApiAdapter(SourceAdapter):
         if not isinstance(raw, list):
             raise SourceError(self.info.id, f"département {code_departement} : réponse inattendue")
         return [parse_commune(item) for item in raw]
+
+    async def communes(self) -> list[Commune]:
+        """Toutes les communes (~35 000, sans les arrondissements de Paris, Lyon et Marseille)."""
+        raw = await self.client.get_json("/communes", {"fields": FIELDS})
+        if not isinstance(raw, list):
+            raise SourceError(self.info.id, "liste des communes : réponse inattendue")
+        return [parse_commune(item) for item in raw]
