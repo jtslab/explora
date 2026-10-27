@@ -123,6 +123,14 @@ python -m http.server -d dist/site 8001                     # puis http://localh
   (DEPP) pour les BTS. Chiffre de l'établissement, sinon moyenne nationale du diplôme.
   Environ un tiers des formations est couvert. Régénération :
   `uv run python -m explora.site.insertion`.
+- `web/data/parcours.json` : niveau de sortie (bac+N) et famille de chaque formation, qui
+  donne son parcours type (spécialités conseillées au lycée, accès, poursuites,
+  passerelles, rédigés dans `src/explora/site/parcours.py`), plus ce qui s'est passé à la
+  dernière session de la plateforme nationale d'admission (MESR) : sélectivité, taux
+  d'accès et concours de chaque formation, part d'admis par type de bac et doublettes de
+  spécialités des bacheliers généraux admis. Sert les filtres « Entrer » et « Diplôme
+  visé » de la carte et la page `/parcours/`. Régénération :
+  `uv run python -m explora.site.parcours`.
 - Fond de carte : Plan IGN (Géoplateforme, WMTS), désaturé.
 - Démo publiée par `.github/workflows/pages.yml` à chaque merge sur `main`
   (activer Settings > Pages > Source « GitHub Actions »).

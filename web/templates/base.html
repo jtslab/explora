@@ -30,6 +30,9 @@
   {% endif %}
   <nav aria-label="Navigation principale">
     <a href="{{ racine }}" {% if page == "carte" %}aria-current="page"{% endif %}>Carte</a>
+    {% if parcours %}
+    <a href="{{ racine }}parcours/" {% if page == "parcours" %}aria-current="page"{% endif %}>Parcours</a>
+    {% endif %}
     <a href="{{ racine }}#methode">Méthode</a>
     <a href="https://github.com/jtslab/explora">Code source</a>
   </nav>

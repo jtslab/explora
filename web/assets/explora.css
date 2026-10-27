@@ -427,6 +427,26 @@ details.toutes ul { list-style: none; margin: 0; padding: 0; break-inside: avoid
 .formations .parcours a { font-weight: 500; padding: 0 3px; }
 .formations .aide { margin: 4px 0 0; font-size: 12.5px; color: var(--discret); max-width: 75ch; }
 .formations .aucune { margin: 0; color: var(--discret); }
+.formations-filtres { display: flex; gap: 8px; flex-wrap: wrap; width: min(100%, 480px); }
+.formations-filtres input { flex: 1 1 200px; }
+.formations-filtres select, .niveaux-filtres select {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: var(--surface);
+  color: var(--encre);
+  min-width: 0;
+}
+.niveaux { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12.5px; margin: 2px 0; }
+.niv { padding: 1px 7px; border-radius: 999px; background: var(--accent-doux); color: var(--encre); font-weight: 500; white-space: nowrap; }
+.niv-sortie { background: var(--accent); color: var(--surface); }
+.niveaux .fleche { color: var(--discret); }
+.niveaux .acces { color: var(--discret); }
+.niveaux .acces::before { content: "·"; margin-right: 6px; }
+.formations .niveaux a { font-weight: 500; }
+.formations .admis { font-size: 12.5px; color: var(--discret); overflow-wrap: anywhere; }
 .encadre { font-size: 13.5px; line-height: 1.5; padding: 12px 14px; border-radius: var(--rayon); background: var(--alerte-fond); border: 1px solid var(--alerte-trait); max-width: 75ch; }
 .encadre p { margin: 0; }
 .encadre p + p { margin-top: 6px; }
@@ -463,3 +483,39 @@ details.toutes ul { list-style: none; margin: 0; padding: 0; break-inside: avoid
   * { scroll-behavior: auto !important; transition: none !important; }
 }
 .demo.a-venir { background: transparent; border-style: dashed; color: var(--discret); }
+
+/* Page des parcours types */
+.entete-parcours h1 { font-size: clamp(28px, 4.4vw, 44px); letter-spacing: -0.02em; margin-top: 10px; }
+.entete-parcours h1 span { display: block; font-size: 0.5em; font-weight: 500; color: var(--discret); letter-spacing: 0; margin-top: 8px; }
+.entete-parcours .resume { color: var(--discret); max-width: 62ch; margin: 14px 0 0; }
+.echelle { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.echelle li { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: baseline; padding: 8px 12px; border-radius: var(--rayon); background: var(--surface); border: 1px solid var(--trait); border-left: 4px solid var(--accent); }
+.echelle b { font-family: var(--f-titre); font-size: 17px; }
+.echelle small { color: var(--discret); white-space: nowrap; }
+.entrees { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.entrees > div { padding: 12px 14px; border: 1px solid var(--trait); border-radius: var(--rayon); background: var(--surface); }
+.entrees h3 { font-size: 16px; }
+.entrees p { margin: 6px 0 0; font-size: 14px; }
+.sommaire-parcours ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 16px; }
+.sommaire-parcours li { display: grid; padding: 6px 0; border-top: 1px solid var(--trait); }
+.sommaire-parcours small { color: var(--discret); font-size: 12.5px; }
+.famille { scroll-margin-top: 16px; }
+.parcours-page { grid-template-columns: minmax(0, 1fr); }
+.famille .niveaux { font-size: 13px; }
+.famille .niv { white-space: normal; }
+.etapes { display: grid; gap: 10px; margin: 0; }
+.etapes > div { display: grid; grid-template-columns: 160px 1fr; gap: 12px; }
+.etapes dt { font-weight: 600; }
+.etapes dd { margin: 0; max-width: 70ch; }
+.etapes .admis { margin: 6px 0 0; font-size: 13.5px; color: var(--accent); }
+@media (max-width: 760px) {
+  .etapes > div { grid-template-columns: 1fr; gap: 2px; }
+  .echelle li { grid-template-columns: 56px 1fr; }
+  .echelle small { grid-column: 2; }
+}
+
+/* Filtres de niveau sur la carte */
+.niveaux-filtres { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.niveaux-filtres label { display: grid; gap: 3px; font-size: 12.5px; color: var(--discret); min-width: 0; }
+.fiche-parcours { margin-top: 8px; padding: 10px 12px; border-radius: var(--rayon); background: var(--accent-doux); font-size: 13px; display: grid; gap: 4px; }
+.fiche-parcours p { margin: 0; }
