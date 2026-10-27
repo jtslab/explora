@@ -371,6 +371,22 @@ FAMILLES: dict[str, Famille] = {
     ),
 }
 
+SUITES: dict[str, tuple[str, ...]] = {
+    "bts": ("lp", "licence", "but", "ingenieur", "commerce"),
+    "but": ("ingenieur", "commerce", "iep"),
+    "deust": ("lp", "licence"),
+    "licence": ("iep", "commerce", "ingenieur", "veterinaire"),
+    "licence-renforcee": ("iep", "commerce", "ingenieur"),
+    "cupge": ("ingenieur", "commerce", "veterinaire"),
+    "cpge": ("ingenieur", "commerce", "veterinaire", "licence"),
+    "pass": ("las", "licence"),
+    "las": ("pass",),
+    "annee-prepa": ("licence", "cpge", "bts"),
+    "dcg": ("commerce",),
+    "lp": ("commerce",),
+}
+"""Familles où mènent une poursuite d'études ou une admission parallèle, pour l'arbre."""
+
 NIVEAUX_SORTIE = {
     1: "Bac+1 ou moins",
     2: "Bac+2",
@@ -496,6 +512,8 @@ class IndexParcours(BaseModel):
     familles: dict[str, ProfilAdmis] = Field(default_factory=dict)
     """Profil des admis agrégé par famille, pour la page des parcours."""
     specialites_familles: dict[str, Specialites] = Field(default_factory=dict)
+    doublettes_familles: dict[str, dict[str, int]] = Field(default_factory=dict)
+    """Bacheliers généraux admis par doublette de spécialités, pour l'arbre des parcours."""
     offres: dict[str, OffreAcces] = Field(default_factory=dict)
     """Par code de formation."""
 
@@ -755,6 +773,11 @@ def construire(
         mentions=mentions,
         familles={k: p for k, c in sorted(bacs_famille.items()) if (p := _profil(c))},
         specialites_familles={k: s for k, c in sorted(spe_famille.items()) if (s := c.resultat())},
+        doublettes_familles={
+            k: {doublette(d): n for d, n in c.acceptations.most_common() if n > 0}
+            for k, c in sorted(spe_famille.items())
+            if c.total >= MIN_SPECIALITES
+        },
         offres=dict(sorted(offres.items())),
     )
 

@@ -20,6 +20,13 @@
     <p class="resume">Pour chaque famille de formation&nbsp;: le niveau de diplôme atteint, la façon d'y entrer, le bac et les spécialités à choisir au lycée, puis les poursuites et les passerelles. Les chiffres viennent des admissions de la session {{ parcours.session }}.</p>
   </div>
 
+  <section class="section arbre-section" aria-labelledby="arbre-titre">
+    <header><h2 id="arbre-titre">Explorer les parcours</h2></header>
+    <p class="arbre-aide">Partez de votre bac, puis cliquez sur chaque branche&nbsp;: spécialités, famille de formation, diplôme visé, formation. La longueur des barres donne le nombre de néo-bacheliers admis en {{ parcours.session }}. Le détail du dernier choix s'affiche sous l'arbre.</p>
+    <div class="arbre" id="arbre" data-racine="{{ racine }}"><p>Chargement de l'arbre…</p></div>
+    <div class="arbre-detail" id="arbre-detail" aria-live="polite" hidden></div>
+  </section>
+
   <section class="section" aria-labelledby="niveaux">
     <header><h2 id="niveaux">Les niveaux de diplôme</h2></header>
     <ol class="echelle">
@@ -75,4 +82,7 @@
   </section>
 </main>
 <footer class="pied-page">Explora · outil indépendant · données publiques ouvertes · <a href="https://github.com/jtslab/explora">code source</a></footer>
+{% endblock %}
+{% block scripts %}
+<script src="{{ racine }}assets/parcours.js"></script>
 {% endblock %}

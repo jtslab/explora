@@ -406,6 +406,52 @@ def _index_carte(
     )
 
 
+def _arbre(index: fm.IndexFormations, parcours: pc.IndexParcours) -> str:
+    """Données de l'arbre de la page des parcours : admis par bac, famille, niveau, formation."""
+
+    def admis(profil: pc.ProfilAdmis | None) -> list[int] | None:
+        return [round(profil.admis * p / 100) for p in profil.bacs] if profil else None
+
+    villes = index.villes_par_mention()
+    mentions = []
+    for i, m in enumerate(index.mentions):
+        mp = parcours.mentions.get(m.libelle)
+        if mp is None:
+            continue
+        mentions.append(
+            [
+                m.libelle,
+                mp.famille,
+                mp.sortie,
+                mp.acces,
+                admis(mp.profil),
+                [list(d) for d in mp.specialites.doublettes] if mp.specialites else None,
+                len(villes[i]),
+            ]
+        )
+    return json.dumps(
+        {
+            "session": parcours.session,
+            "niveaux": pc.NIVEAUX_SORTIE,
+            "acces": pc.ACCES,
+            "familles": {
+                k: {
+                    "titre": f.titre,
+                    "sortie": f.sortie,
+                    "admis": admis(parcours.familles.get(k)),
+                    "doublettes": parcours.doublettes_familles.get(k, {}),
+                    "suites": list(pc.SUITES.get(k, ())),
+                }
+                for k, f in pc.FAMILLES.items()
+            },
+            # [libellé, famille, bac+N, accès, admis par bac, doublettes, nombre de villes]
+            "mentions": mentions,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
 def generer(
     export: ExportVilles,
     dossier_web: Path,
@@ -472,6 +518,10 @@ def generer(
         )
         pages.append(page)
 
+    if parcours is not None and formations is not None:
+        (sortie / "data" / "parcours-arbre.json").write_text(
+            _arbre(formations, parcours), encoding="utf-8"
+        )
     if parcours is not None:
         page = sortie / "parcours" / "index.html"
         page.parent.mkdir(parents=True)

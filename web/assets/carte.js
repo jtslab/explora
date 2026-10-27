@@ -203,6 +203,9 @@
         formations.mentions.forEach(function (m, i) { if (m.famille === famille) indices.push(i); });
         appliquerFiltre(filtreMentions(formations.familles[famille][0], indices));
       }
+      var formation = new URLSearchParams(window.location.search).get("formation");
+      var i = formation ? formations.mentions.findIndex(function (m) { return m.libelle === formation; }) : -1;
+      if (i !== -1) appliquerFiltre(filtreMentions(formation, [i]));
     }
   }
 
