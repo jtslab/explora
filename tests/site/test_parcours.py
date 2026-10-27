@@ -185,3 +185,13 @@ def test_site(tmp_path: Path) -> None:
     assert index["familles"]["bts"][2] == []
     mentions = {m[0]: m for m in index["mentions"]}
     assert mentions["BTS - Tourisme"][3:6] == ["bts", 2, "dossier"]
+    assert 'id="arbre"' in page and "assets/parcours.js" in page
+    arbre = json.loads((tmp_path / "data" / "parcours-arbre.json").read_text())
+    assert arbre["familles"]["bts"]["admis"] == [6, 12, 12]
+    assert arbre["familles"]["bts"]["doublettes"] == {
+        "SES + HGGSP": 30,
+        "Maths + Physique-chimie": 10,
+    }
+    assert "licence" in arbre["familles"]["bts"]["suites"]
+    tourisme = next(m for m in arbre["mentions"] if m[0] == "BTS - Tourisme")
+    assert tourisme[1:5] == ["bts", 2, "dossier", [6, 12, 12]] and tourisme[6] == 1
