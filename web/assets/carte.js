@@ -26,7 +26,9 @@
   var carte = null;
   var bulle = null;
   var formations = null;
-  var filtre = null;
+  var selection = null; // ville, métier ou formation choisis dans la recherche
+  var filtre = null; // ce choix restreint aux niveaux d'entrée et de sortie demandés
+  var ACCES = { libre: "Non sélective", dossier: "Sélective sur dossier", concours: "Concours ou épreuves" };
 
   function echapper(texte) {
     return String(texte).replace(/[&<>"']/g, function (c) {
@@ -168,8 +170,13 @@
       mentions: index.mentions.map(function (m, i) {
         var ids = m[2].map(function (c) { return code[c]; }).filter(function (id) { return id !== undefined; });
         ids.forEach(function (id) { parVille[id].push(i); });
-        return { libelle: m[0], cle: normaliser(m[0]), type: m[1], ids: ids };
+        return {
+          libelle: m[0], cle: normaliser(m[0]), type: m[1], ids: ids,
+          famille: m[3] || null, sortie: m[4] === undefined ? null : m[4], acces: m[5] || null,
+          bacs: m[6] || null, doublettes: m[7] || null
+        };
       }),
+      familles: index.familles || {},
       parVille: parVille,
       metiers: (index.metiers || []).map(function (m) {
         return { code: m[0], libelle: m[1], cle: normaliser(m[1]), mentions: m[2] };
@@ -185,22 +192,69 @@
     document.getElementById("libelle-recherche").textContent = metiers
       ? "Chercher une ville, un métier ou une formation"
       : "Chercher une ville ou une formation";
+    if (Object.keys(formations.familles).length) {
+      document.getElementById("niveaux-filtres").hidden = false;
+      ["filtre-entree", "filtre-sortie"].forEach(function (id) {
+        document.getElementById(id).addEventListener("change", function () { majFiltre(true); });
+      });
+      var famille = new URLSearchParams(window.location.search).get("famille");
+      if (famille && formations.familles[famille]) {
+        var indices = [];
+        formations.mentions.forEach(function (m, i) { if (m.famille === famille) indices.push(i); });
+        appliquerFiltre(filtreMentions(formations.familles[famille][0], indices));
+      }
+    }
   }
 
-  function appliquerFiltre(nouveau) {
-    filtre = nouveau;
+  function niveaux() {
+    var e = document.getElementById("filtre-entree"), s = document.getElementById("filtre-sortie");
+    return {
+      entree: e.value, sortie: s.value,
+      libelle: [e.value ? e.options[e.selectedIndex].text : "", s.value ? s.options[s.selectedIndex].text : ""]
+        .filter(Boolean).join(" → ")
+    };
+  }
+
+  // Une formation répond-elle aux niveaux d'entrée et de sortie demandés ?
+  function passe(i, n) {
+    var m = formations.mentions[i];
+    if (n.entree) {
+      if (ACCES[n.entree]) {
+        if (m.acces !== n.entree) return false;
+      } else {
+        var f = formations.familles[m.famille];
+        if (!f || f[2].indexOf(Number(n.entree)) === -1) return false;
+      }
+    }
+    if (n.sortie && (m.sortie === null || Math.min(m.sortie, 5) !== Number(n.sortie))) return false;
+    return true;
+  }
+
+  // Combine le choix de la recherche et les niveaux, puis met la carte à jour.
+  function majFiltre(cadrer) {
+    var n = formations && document.getElementById("niveaux-filtres") && !document.getElementById("niveaux-filtres").hidden
+      ? niveaux() : { entree: "", sortie: "", libelle: "" };
+    if (!n.entree && !n.sortie) {
+      filtre = selection;
+    } else {
+      var base = selection ? Array.from(selection.mentions) : formations.mentions.map(function (_, i) { return i; });
+      var f = filtreMentions(selection ? selection.libelle : "Toutes les formations", base.filter(function (i) { return passe(i, n); }));
+      f.niveaux = n.libelle;
+      filtre = f;
+    }
     var zone = document.getElementById("filtre");
     if (filtre) {
-      document.getElementById("filtre-libelle").textContent = filtre.libelle;
+      document.getElementById("filtre-libelle").textContent = filtre.libelle + (filtre.niveaux ? " · " + filtre.niveaux : "");
       document.getElementById("filtre-nombre").textContent =
         filtre.ids.size + (filtre.ids.size > 1 ? " villes avec une formation qui y mène" : " ville avec une formation qui y mène");
       zone.hidden = false;
     } else {
       zone.hidden = true;
     }
+    afficherFicheParcours();
     if (bulle) bulle.remove();
     recalculer();
-    if (filtre && carte && filtre.ids.size) {
+    if (cadrer && filtre && carte && filtre.ids.size) {
       var bornes = new maplibregl.LngLatBounds();
       filtre.ids.forEach(function (id) {
         var c = villes[id].geometry.coordinates;
@@ -209,6 +263,40 @@
       });
       if (!bornes.isEmpty()) carte.fitBounds(bornes, { padding: 40, maxZoom: 9 });
     }
+  }
+
+  // Repères de parcours quand la recherche porte sur une seule famille de formation.
+  function afficherFicheParcours() {
+    var zone = document.getElementById("fiche-parcours");
+    if (!zone) return;
+    var indices = filtre ? Array.from(filtre.mentions) : [];
+    var familles = new Set(indices.map(function (i) { return formations.mentions[i].famille; }));
+    var id = familles.size === 1 ? familles.values().next().value : null;
+    var f = id && formations.familles[id];
+    if (!f) { zone.hidden = true; return; }
+    var m = indices.length === 1 ? formations.mentions[indices[0]] : null;
+    var lignes = ["<p><b>" + echapper(f[0]) + "</b></p>",
+      "<p>Après le bac" + (f[2].length ? " (ou avec un bac+" + f[2].join(", bac+") + ")" : "") + " → " +
+      echapper(m && m.sortie !== null ? (m.sortie <= 1 ? "1 an" : "Bac+" + m.sortie) : f[1]) +
+      (m && m.acces ? " · " + ACCES[m.acces] : "") + "</p>"];
+    if (m && m.bacs) {
+      var noms = ["bac général", "techno", "pro"];
+      lignes.push("<p>Admis : " + m.bacs.map(function (p, i) { return p > 0 ? p + " % " + noms[i] : ""; })
+        .filter(Boolean).join(", ") + "</p>");
+    }
+    if (m && m.doublettes) {
+      lignes.push("<p>Spécialités fréquentes : " + m.doublettes.slice(0, 2).map(function (d) {
+        return echapper(d[0]) + " (" + d[1] + " %)";
+      }).join(", ") + "</p>");
+    }
+    lignes.push('<p><a href="parcours/#' + encodeURIComponent(id) + '">Parcours type : spécialités, accès, passerelles →</a></p>');
+    zone.innerHTML = lignes.join("");
+    zone.hidden = false;
+  }
+
+  function appliquerFiltre(nouveau) {
+    selection = nouveau;
+    majFiltre(true);
   }
 
   function filtreMentions(libelle, indices) {
@@ -259,8 +347,9 @@
     var types = [];
     formations.types.forEach(function (t, i) { if (correspond(t.cle, mots)) types.push(i); });
     var trouvees = [];
+    var n = document.getElementById("niveaux-filtres").hidden ? { entree: "", sortie: "" } : niveaux();
     formations.mentions.forEach(function (m, i) {
-      if (correspond(m.cle, mots) || types.indexOf(m.type) !== -1) trouvees.push(i);
+      if ((correspond(m.cle, mots) || types.indexOf(m.type) !== -1) && passe(i, n)) trouvees.push(i);
     });
     trouvees.sort(function (a, b) { return formations.mentions[b].ids.length - formations.mentions[a].ids.length; });
     if (trouvees.length > 1) {
@@ -346,6 +435,8 @@
       if (!e.target.closest(".recherche")) fermer();
     });
     document.getElementById("filtre-retirer").addEventListener("click", function () {
+      document.getElementById("filtre-entree").value = "";
+      document.getElementById("filtre-sortie").value = "";
       appliquerFiltre(null);
       champ.focus();
     });

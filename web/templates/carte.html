@@ -18,6 +18,30 @@
         <div><b id="filtre-libelle"></b><span id="filtre-nombre"></span></div>
         <button type="button" id="filtre-retirer">Retirer</button>
       </div>
+      <div class="niveaux-filtres" id="niveaux-filtres" hidden>
+        <label for="filtre-entree">Entrer
+          <select id="filtre-entree">
+            <option value="">Peu importe</option>
+            <option value="libre">Après le bac, sans sélection</option>
+            <option value="dossier">Après le bac, sur dossier</option>
+            <option value="concours">Après le bac, concours ou épreuves</option>
+            <option value="1">Avec un bac+1 (réorientation)</option>
+            <option value="2">Avec un bac+2 (admission parallèle)</option>
+            <option value="3">Avec un bac+3 (admission parallèle)</option>
+          </select>
+        </label>
+        <label for="filtre-sortie">Diplôme visé
+          <select id="filtre-sortie">
+            <option value="">Peu importe</option>
+            <option value="1">Bac+1 ou moins</option>
+            <option value="2">Bac+2</option>
+            <option value="3">Bac+3</option>
+            <option value="4">Bac+4</option>
+            <option value="5">Bac+5 et plus</option>
+          </select>
+        </label>
+      </div>
+      <div class="fiche-parcours" id="fiche-parcours" aria-live="polite" hidden></div>
     </div>
 
     <fieldset class="poids">

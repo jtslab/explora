@@ -16,27 +16,33 @@
         compte: d.querySelector("summary small"),
         total: d.querySelector("summary small").textContent,
         lignes: Array.prototype.map.call(d.querySelectorAll("li[data-n]"), function (li) {
-          return { li: li, n: Number(li.dataset.n), texte: normaliser(li.textContent + " " + d.querySelector("summary span").textContent) };
+          return { li: li, n: Number(li.dataset.n), sortie: li.dataset.sortie || "", texte: normaliser(li.textContent + " " + d.querySelector("summary span").textContent) };
         })
       };
     });
-    champ.addEventListener("input", function () {
+    var sortie = document.getElementById("filtre-sortie");
+    var filtrer = function () {
       var mots = normaliser(champ.value).split(/\s+/).filter(Boolean);
+      var niveau = sortie ? sortie.value : "";
+      var actif = mots.length || niveau;
       var total = 0;
       groupes.forEach(function (g) {
         var vus = 0;
         g.lignes.forEach(function (l) {
-          var ok = mots.every(function (m) { return l.texte.indexOf(m) !== -1; });
+          var ok = mots.every(function (m) { return l.texte.indexOf(m) !== -1; }) &&
+            (!niveau || l.sortie === niveau);
           l.li.hidden = !ok;
           if (ok) vus += l.n;
         });
         g.d.hidden = vus === 0;
-        g.compte.textContent = mots.length ? vus + " / " + g.total : g.total;
-        g.d.open = mots.length ? vus > 0 : g.ouvert;
+        g.compte.textContent = actif ? vus + " / " + g.total : g.total;
+        g.d.open = actif ? vus > 0 : g.ouvert;
         total += vus;
       });
       bloc.querySelector(".aucune").hidden = total > 0;
-    });
+    };
+    champ.addEventListener("input", filtrer);
+    if (sortie) sortie.addEventListener("change", filtrer);
   }
 
   var zone = document.getElementById("minicarte");

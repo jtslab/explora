@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block titre %}Après le bac : niveaux d'entrée et de sortie, spécialités et passerelles par formation | Explora{% endblock %}
+{% block description %}BTS, BUT, licence, prépa, écoles d'ingénieurs ou de commerce, santé : le niveau atteint, comment y entrer, les spécialités du lycée des admis et les passerelles, formation par formation.{% endblock %}
+{% block canonique %}{{ base_url }}/parcours/{% endblock %}
+{% set echelle = [
+  ("Bac", "Bac général, technologique ou professionnel", "Niveau 4"),
+  ("Bac+2", "BTS, DEUST, DUT en fin de 2e année de BUT, fin de prépa", "Niveau 5"),
+  ("Bac+3", "Licence, BUT, licence professionnelle, bachelor, diplômes d'État du social et du paramédical", "Niveau 6"),
+  ("Bac+5", "Master, diplôme d'ingénieur, grandes écoles, instituts d'études politiques", "Niveau 7"),
+  ("Bac+8", "Doctorat ; les études de médecine durent de 9 à 12 ans", "Niveau 8"),
+] %}
+{% block contenu %}
+<main class="fiche parcours-page">
+  <div class="entete-parcours">
+    <nav class="ariane" aria-label="Fil d'Ariane">
+      <a href="{{ racine }}">Carte des villes étudiantes</a><span aria-hidden="true">›</span>
+      <span aria-current="page">Parcours</span>
+    </nav>
+    <h1>Après le bac&nbsp;: où entrer, jusqu'où aller<span>Le parcours type de chaque famille de formation</span></h1>
+    <p class="resume">Pour chaque famille de formation&nbsp;: le niveau de diplôme atteint, la façon d'y entrer, le bac et les spécialités à choisir au lycée, puis les poursuites et les passerelles. Les chiffres viennent des admissions de la session {{ parcours.session }}.</p>
+  </div>
+
+  <section class="section" aria-labelledby="niveaux">
+    <header><h2 id="niveaux">Les niveaux de diplôme</h2></header>
+    <ol class="echelle">
+      {% for niv, exemples, cadre in echelle %}
+      <li><b>{{ niv }}</b><span>{{ exemples }}</span><small>{{ cadre }}</small></li>
+      {% endfor %}
+    </ol>
+    <div class="entrees">
+      <div><h3>Juste après le bac</h3><p>Toutes les formations de ce site recrutent en première année par la plateforme nationale d'admission&nbsp;: sans sélection (licence), sur dossier (BTS, BUT, prépas…) ou avec un concours ou des épreuves (écoles, santé, art).</p></div>
+      <div><h3>En admission parallèle</h3><p>Beaucoup d'écoles et de licences accueillent aussi des étudiants en cours de route, après un bac+1, un bac+2 ou un bac+3. Un premier choix n'enferme pas&nbsp;: un BTS peut mener à une école d'ingénieurs, une prépa à une licence.</p></div>
+      <div><h3>En reprise d'études</h3><p>Apprentissage, formation continue et validation des acquis de l'expérience ouvrent la plupart de ces diplômes plus tard.</p></div>
+    </div>
+  </section>
+
+  <nav class="sommaire-parcours" aria-label="Familles de formation">
+    <h2 class="bloc-titre">Les familles de formation</h2>
+    <ul>
+      {% for id, f in FAMILLES.items() %}
+      <li><a href="#{{ id }}">{{ f.titre }}</a><small>{{ f.sortie }}</small></li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  {% for id, f in FAMILLES.items() %}
+  {% set profil = parcours.familles.get(id) %}
+  {% set spe = parcours.specialites_familles.get(id) %}
+  <section class="section famille" id="{{ id }}" aria-labelledby="titre-{{ id }}">
+    <header>
+      <h2 id="titre-{{ id }}">{{ f.titre }}</h2>
+      <a href="{{ racine }}?famille={{ id }}">Voir les villes sur la carte →</a>
+    </header>
+    <div class="niveaux"><span class="niv">Après le bac</span>{% for n in f.entrees %}<span class="niv">ou avec un bac+{{ n }}</span>{% endfor %}<span class="fleche" aria-hidden="true">→</span><span class="niv niv-sortie">{{ f.sortie }}</span></div>
+    <dl class="etapes">
+      <div><dt>Au lycée</dt><dd>{{ f.lycee }}
+        {% if profil or spe %}
+        <p class="admis">Admis en {{ parcours.session }}{% if profil %}&nbsp;: {{ profil.bacs|bacs(true) }}{% endif %}.{% if spe %} Spécialités les plus fréquentes chez les bacheliers généraux admis&nbsp;: {% for d, part in spe.doublettes %}{{ d }} ({{ part }}&nbsp;%){{ ", " if not loop.last else "." }}{% endfor %}{% endif %}</p>
+        {% endif %}
+      </dd></div>
+      <div><dt>Comment y entrer</dt><dd>{{ f.acces }}</dd></div>
+      <div><dt>Et après</dt><dd>{{ f.apres }}</dd></div>
+      <div><dt>Passerelles</dt><dd>{{ f.passerelles }}</dd></div>
+    </dl>
+  </section>
+  {% endfor %}
+
+  <section class="sources" aria-labelledby="sources">
+    <h2 class="bloc-titre" id="sources">Sources et avertissements</h2>
+    <p>Les parcours types sont des repères généraux, établis d'après les règles nationales des diplômes. Les attendus, les places et les modalités varient d'un établissement à l'autre&nbsp;: la fiche officielle de chaque formation, accessible depuis les pages ville, fait foi.</p>
+    <ul>
+      <li>Vœux et admissions par formation, et admissions des bacheliers généraux par enseignements de spécialité&nbsp;: plateforme nationale d'admission, MESR, session {{ parcours.session }} (Licence Ouverte 2.0)</li>
+    </ul>
+    <p>Explora est un outil indépendant, sans lien avec les organismes publics dont il réutilise les données ouvertes.</p>
+  </section>
+</main>
+<footer class="pied-page">Explora · outil indépendant · données publiques ouvertes · <a href="https://github.com/jtslab/explora">code source</a></footer>
+{% endblock %}

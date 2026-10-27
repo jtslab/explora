@@ -21,6 +21,7 @@ from explora.modules.etudiant.scoring import Axe
 from explora.site import formations as fm
 from explora.site import insertion as ins
 from explora.site import metiers as mt
+from explora.site import parcours as pc
 from explora.site.donnees import ExportVilles, FeatureVille, ProprietesVille, charger, slugs
 
 FORMATIONS = {
@@ -126,6 +127,25 @@ def devenir(chiffres: ins.Insertion) -> str:
     return " · ".join(morceaux)
 
 
+def bac_plus(sortie: int | None) -> str:
+    """Niveau de sortie court pour une étiquette : « Bac+3 », « Bac+5 et plus »."""
+    if sortie is None:
+        return "Niveau variable"
+    if sortie <= 1:
+        return "1 an"
+    return f"Bac+{sortie}"
+
+
+def bacs(parts: tuple[int, int, int] | list[int], long: bool = False) -> str:
+    """« 62 % bac général, 30 % techno » : les parts nulles sont omises."""
+    noms = (
+        ("de bacheliers généraux", "technologiques", "professionnels")
+        if long
+        else ("bac général", "techno", "pro")
+    )
+    return ", ".join(f"{p}{INSECABLE}% {nom}" for p, nom in zip(parts, noms, strict=True) if p > 0)
+
+
 def axes_tries(v: Ville) -> list[tuple[str, float]]:
     notes = [(AXES[axe], v.p.axes.note(axe)) for axe in Axe]
     return sorted(((lib, n) for lib, n in notes if n is not None), key=lambda x: -x[1])
@@ -223,6 +243,8 @@ def _environnement(dossier_web: Path) -> Environment:
     env.filters["pourcent"] = pourcent
     env.filters["teinte"] = teinte
     env.filters["devenir"] = devenir
+    env.filters["bac_plus"] = bac_plus
+    env.filters["bacs"] = bacs
     env.globals.update(
         FORMATIONS=FORMATIONS,
         AXES=AXES,
@@ -233,6 +255,9 @@ def _environnement(dossier_web: Path) -> Environment:
         resume=resume,
         faq=faq,
         faq_jsonld=faq_jsonld,
+        FAMILLES=pc.FAMILLES,
+        ACCES=pc.ACCES,
+        NIVEAUX_SORTIE=pc.NIVEAUX_SORTIE,
     )
     return env
 
@@ -247,6 +272,8 @@ class OffreVille:
     urls: tuple[str, ...]
     insertion: ins.Insertion | None = None
     """Devenir des diplômés de l'établissement (le chiffre national va sur la formation)."""
+    acces: pc.OffreAcces | None = None
+    """Sélectivité et taux d'accès de la dernière session (premier parcours connu)."""
 
 
 @dataclass(frozen=True)
@@ -256,6 +283,8 @@ class FormationVille:
     metiers: tuple[str, ...] = ()
     """Métiers visés d'après le RNCP (libellés ROME)."""
     insertion_nationale: ins.Insertion | None = None
+    parcours: pc.MentionParcours | None = None
+    """Famille, niveau de sortie, profil des admis."""
 
 
 def formations_par_type(
@@ -263,6 +292,7 @@ def formations_par_type(
     code_insee: str,
     metiers: mt.IndexMetiers | None = None,
     insertion: ins.IndexInsertion | None = None,
+    parcours: pc.IndexParcours | None = None,
 ) -> list[tuple[str, list[FormationVille]]]:
     """Formations d'une ville groupées par type (BTS, Licence...), les plus fournis d'abord.
 
@@ -296,6 +326,9 @@ def formations_par_type(
                 fm.URL_FICHE.format(code=o.code) for o in sorted(offres, key=lambda o: o.code)
             ),
             insertion=locaux[0] if locaux else None,
+            acces=next(
+                (a for o in offres if parcours and (a := parcours.offres.get(o.code))), None
+            ),
         )
 
     groupes: dict[str, list[FormationVille]] = defaultdict(list)
@@ -310,6 +343,7 @@ def formations_par_type(
                 if metiers and corresp
                 else (),
                 insertion_nationale=nationale.get(i),
+                parcours=parcours.mentions.get(mention.libelle) if parcours else None,
             )
         )
     return sorted(
@@ -318,9 +352,28 @@ def formations_par_type(
     )
 
 
-def _index_carte(index: fm.IndexFormations, metiers: mt.IndexMetiers | None = None) -> str:
+def _index_carte(
+    index: fm.IndexFormations,
+    metiers: mt.IndexMetiers | None = None,
+    parcours: pc.IndexParcours | None = None,
+) -> str:
     """Mentions et villes qui les proposent, métiers et secteurs, pour la recherche."""
     villes = index.villes_par_mention()
+
+    def niveaux(libelle: str) -> list[object]:
+        # [famille, bac+N de sortie, accès, % bac général/techno/pro, doublettes]
+        m = parcours.mentions.get(libelle) if parcours else None
+        if m is None:
+            return []
+        spe = m.specialites or (parcours.specialites_familles.get(m.famille) if parcours else None)
+        return [
+            m.famille,
+            m.sortie,
+            m.acces,
+            list(m.profil.bacs) if m.profil else None,
+            [list(d) for d in spe.doublettes] if spe else None,
+        ]
+
     par_metier: dict[str, list[int]] = defaultdict(list)
     if metiers:
         for i, m in enumerate(index.mentions):
@@ -331,7 +384,14 @@ def _index_carte(index: fm.IndexFormations, metiers: mt.IndexMetiers | None = No
         {
             "session": index.session,
             "types": index.types,
-            "mentions": [[m.libelle, m.type, villes[i]] for i, m in enumerate(index.mentions)],
+            "mentions": [
+                [m.libelle, m.type, villes[i], *niveaux(m.libelle)]
+                for i, m in enumerate(index.mentions)
+            ],
+            # famille → [titre, niveau de sortie en clair, admissions parallèles (bac+N)]
+            "familles": {k: [f.titre, f.sortie, list(f.entrees)] for k, f in pc.FAMILLES.items()}
+            if parcours
+            else {},
             # [code ROME, libellé, indices des mentions] ; le secteur est la 1re lettre du code.
             "metiers": [
                 [code, metiers.metiers[code], mentions]
@@ -354,6 +414,7 @@ def generer(
     formations: fm.IndexFormations | None = None,
     metiers: mt.IndexMetiers | None = None,
     insertion: ins.IndexInsertion | None = None,
+    parcours: pc.IndexParcours | None = None,
 ) -> list[Path]:
     """Écrit le site dans `sortie` et renvoie les pages produites."""
     base_url = base_url.rstrip("/")
@@ -372,7 +433,7 @@ def generer(
     )
     if formations is not None:
         (sortie / "data" / "formations-index.json").write_text(
-            _index_carte(formations, metiers), encoding="utf-8"
+            _index_carte(formations, metiers, parcours), encoding="utf-8"
         )
     commun = {
         "meta": export.metadata,
@@ -381,6 +442,7 @@ def generer(
         "session_formations": formations.session if formations else None,
         "source_metiers": metiers.source if metiers else None,
         "insertion": insertion is not None,
+        "parcours": parcours,
     }
 
     pages = [sortie / "index.html"]
@@ -401,14 +463,27 @@ def generer(
                 racine="../../",
                 v=v,
                 proches=[(o, distance_km(v, o)) for o in proches],
-                formations=formations_par_type(formations, v.p.code_insee, metiers, insertion),
+                formations=formations_par_type(
+                    formations, v.p.code_insee, metiers, insertion, parcours
+                ),
                 **commun,
             ),
             encoding="utf-8",
         )
         pages.append(page)
 
+    if parcours is not None:
+        page = sortie / "parcours" / "index.html"
+        page.parent.mkdir(parents=True)
+        page.write_text(
+            env.get_template("parcours.html").render(page="parcours", racine="../", **commun),
+            encoding="utf-8",
+        )
+        pages.append(page)
+
     urls = [f"{base_url}/"] + [f"{base_url}/villes/{v.slug}/" for v in villes]
+    if parcours is not None:
+        urls.append(f"{base_url}/parcours/")
     (sortie / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -461,11 +536,13 @@ def main() -> None:
     parser.add_argument("--formations", type=Path, default=Path("web/data/formations.json"))
     parser.add_argument("--metiers", type=Path, default=Path("web/data/metiers.json"))
     parser.add_argument("--insertion", type=Path, default=Path("web/data/insertion.json"))
+    parser.add_argument("--parcours", type=Path, default=Path("web/data/parcours.json"))
     parser.add_argument("--base-url", default="https://explora.app")
     args = parser.parse_args()
     index = fm.charger(args.formations) if args.formations.exists() else None
     index_metiers = mt.charger(args.metiers) if args.metiers.exists() else None
     index_insertion = ins.charger(args.insertion) if args.insertion.exists() else None
+    index_parcours = pc.charger(args.parcours) if args.parcours.exists() else None
     pages = generer(
         charger(args.donnees),
         args.web,
@@ -474,6 +551,7 @@ def main() -> None:
         index,
         index_metiers,
         index_insertion,
+        index_parcours,
     )
     print(f"{len(pages)} pages écrites dans {args.sortie}")
 
