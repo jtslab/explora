@@ -48,6 +48,8 @@ class MetierCible:
     metier: str = ""
     """Ce qui se passe à l'arrivée : statut, premier poste, spécialisation."""
     sources: tuple[str, ...] = field(default=())
+    depart: str = "Lycée"
+    """Première étape du chemin : « Lycée », ou « Après la 3e » pour les CAP et bacs pro."""
 
 
 # Étapes communes à plusieurs voies.
@@ -103,7 +105,7 @@ _REFORME_PROF = (
     "candidature."
 )
 
-METIERS: tuple[MetierCible, ...] = (
+_METIERS_SUP: tuple[MetierCible, ...] = (
     MetierCible(
         id="avocat",
         titre="Avocat ou avocate",
@@ -819,6 +821,704 @@ METIERS: tuple[MetierCible, ...] = (
         ),
     ),
 )
+
+
+# Métiers de l'artisanat, du bâtiment, de la route et du soin : les diplômes d'accès (CAP,
+# bac pro, brevet professionnel, titre professionnel) se préparent avant ou sans le bac et
+# ne figurent pas dans les formations post-bac du site ; seuls les BTS de poursuite y sont.
+_APRES_3E = (
+    "Après la 3e, en lycée professionnel ou en apprentissage dans un CFA (contrat avec un "
+    "employeur, formation rémunérée). Pas de spécialités à choisir : les stages en entreprise "
+    "et la motivation comptent le plus. Avec un bac, un CAP se prépare aussi en un an."
+)
+
+
+def _cap(nom: str, texte: str = "") -> Etape:
+    return Etape(
+        "Après la 3e · 2 ans",
+        f"CAP {nom}",
+        texte
+        or "En lycée professionnel ou en apprentissage. En un an pour qui a déjà un CAP, "
+        "un bac ou plus.",
+    )
+
+
+def _bac_pro(nom: str, texte: str = "") -> Etape:
+    return Etape(
+        "Après la 3e · 3 ans",
+        f"Bac pro {nom}",
+        texte
+        or "En lycée professionnel ou en apprentissage. Il mène à l'emploi ou à un BTS du "
+        "même domaine.",
+    )
+
+
+def _bp(nom: str, texte: str = "") -> Etape:
+    return Etape(
+        "Après le CAP · 2 ans",
+        f"Brevet professionnel (BP) {nom}",
+        texte
+        or "En apprentissage. Il approfondit le métier et prépare à encadrer une équipe ou "
+        "à reprendre une entreprise.",
+    )
+
+
+def _bts(titre: str, formations: tuple[str, ...], texte: str = "") -> Etape:
+    return Etape(
+        "Après le bac · 2 ans",
+        titre,
+        texte
+        or "Sur dossier, souvent en apprentissage ; des places sont réservées aux bacs pro. "
+        "Il ouvre les postes de technicien, de chef d'équipe ou de chef de chantier.",
+        formations,
+    )
+
+
+def _titre_pro(nom: str, texte: str = "") -> Etape:
+    return Etape(
+        "Dès 18 ans · 6 à 12 mois",
+        f"Titre professionnel {nom}",
+        texte
+        or "Délivré par le ministère du Travail, en formation continue ou en alternance : "
+        "la voie la plus courante pour se reconvertir.",
+    )
+
+
+def _metier_pro(
+    id: str,
+    titre: str,
+    romes: tuple[str, ...],
+    mots: tuple[str, ...],
+    metier: str,
+    voies: tuple[Voie, ...],
+    lycee: str = _APRES_3E,
+    depart: str = "Après la 3e",
+) -> MetierCible:
+    return MetierCible(
+        id=id,
+        titre=titre,
+        lycee=lycee,
+        voies=voies,
+        mots=mots,
+        romes=romes,
+        metier=metier,
+        depart=depart,
+    )
+
+
+_REPRISE = "La voie de la reconversion."
+
+_METIERS_PRO: tuple[MetierCible, ...] = (
+    _metier_pro(
+        "plombier",
+        "Plombier ou plombière chauffagiste",
+        ("F1603",),
+        ("plombier", "chauffagiste", "sanitaire", "chauffage", "climatisation", "pompe à chaleur"),
+        "Salarié d'une entreprise du bâtiment, puis souvent artisan à son compte. Les énergies "
+        "renouvelables (pompes à chaleur, solaire) recrutent beaucoup.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (
+                    _cap(
+                        "Monteur en installations sanitaires",
+                        "Ou CAP Monteur en installations thermiques pour le chauffage. En lycée "
+                        "professionnel ou en apprentissage.",
+                    ),
+                    _bp("Monteur en installations du génie climatique et sanitaire"),
+                ),
+                "La voie la plus courante, souvent en apprentissage.",
+            ),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Installateur en chauffage, climatisation et énergies renouvelables"),
+                    _bts(
+                        "BTS Fluides, énergies, domotique",
+                        ("BTS - Fluide, énergie, domotique*",),
+                    ),
+                ),
+            ),
+            Voie(
+                "Titre professionnel",
+                (_titre_pro("Installateur en thermique et sanitaire"),),
+                _REPRISE,
+            ),
+        ),
+    ),
+    _metier_pro(
+        "electricien",
+        "Électricien ou électricienne",
+        ("F1602",),
+        ("electricien", "électricité", "domotique", "câblage"),
+        "Salarié d'une entreprise du bâtiment ou de l'industrie, puis chef d'équipe ou artisan. "
+        "Une habilitation électrique est exigée sur les chantiers.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (_cap("Électricien"), _bp("Électricien")),
+                "La voie la plus courante, souvent en apprentissage.",
+            ),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Métiers de l'électricité et de ses environnements connectés"),
+                    _bts("BTS Électrotechnique", ("BTS - Electrotechnique",)),
+                ),
+            ),
+            Voie(
+                "Titre professionnel",
+                (_titre_pro("Électricien d'équipement du bâtiment"),),
+                _REPRISE,
+            ),
+        ),
+    ),
+    _metier_pro(
+        "macon",
+        "Maçon ou maçonne",
+        ("F1703",),
+        ("maçon", "maconnerie", "gros œuvre", "gros oeuvre", "btp"),
+        "Ouvrier qualifié, puis chef d'équipe ou chef de chantier ; beaucoup s'installent à leur "
+        "compte.",
+        (
+            Voie("CAP, puis brevet professionnel", (_cap("Maçon"), _bp("Maçon"))),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Technicien du bâtiment : organisation et réalisation du gros œuvre"),
+                    _bts("BTS Bâtiment", ("BTS - Bâtiment",)),
+                ),
+            ),
+            Voie("Titre professionnel", (_titre_pro("Maçon"),), _REPRISE),
+        ),
+    ),
+    _metier_pro(
+        "peintre-batiment",
+        "Peintre en bâtiment",
+        ("F1606",),
+        ("peintre", "peinture", "décoration", "plaquiste", "finitions"),
+        "Salarié d'une entreprise de finitions, puis chef d'équipe ou artisan.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (
+                    _cap("Peintre applicateur de revêtements"),
+                    _bp("Peintre applicateur de revêtements"),
+                ),
+            ),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Aménagement et finitions du bâtiment"),
+                    _bts(
+                        "BTS Finitions, aménagement des bâtiments",
+                        ("BTS - Finitions, aménagement des bâtiments*",),
+                    ),
+                ),
+            ),
+            Voie("Titre professionnel", (_titre_pro("Peintre en bâtiment"),), _REPRISE),
+        ),
+    ),
+    _metier_pro(
+        "couvreur",
+        "Couvreur ou couvreuse",
+        ("F1610",),
+        ("couvreur", "toiture", "zingueur", "charpente"),
+        "Salarié d'une entreprise de couverture, puis chef d'équipe ou artisan ; métier très "
+        "demandé.",
+        (
+            Voie("CAP, puis brevet professionnel", (_cap("Couvreur"), _bp("Couvreur"))),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Interventions sur le patrimoine bâti, option couverture"),
+                    _bts(
+                        "BTS Enveloppe des bâtiments",
+                        ("BTS - Enveloppe des bâtiments*",),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "menuisier",
+        "Menuisier ou menuisière",
+        ("H2206",),
+        ("menuisier", "ébéniste", "bois", "agenceur", "charpentier"),
+        "En atelier ou sur chantier, puis chef d'atelier ou artisan.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (
+                    _cap(
+                        "Menuisier fabricant",
+                        "Ou CAP Menuisier installateur pour la pose sur chantier. En lycée "
+                        "professionnel ou en apprentissage.",
+                    ),
+                    _bp("Menuisier"),
+                ),
+            ),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Technicien menuisier agenceur"),
+                    _bts(
+                        "BTS Systèmes constructifs bois et habitat, ou Étude et réalisation "
+                        "d'agencement",
+                        (
+                            "BTS - Systèmes constructifs bois et habitat",
+                            "BTS - Etude et réalisation d'agencement",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "soudeur",
+        "Soudeur ou soudeuse",
+        ("H2913",),
+        ("soudeur", "soudure", "chaudronnier", "chaudronnerie", "métallerie"),
+        "Dans l'industrie, la construction navale ou le nucléaire ; des certifications de "
+        "soudage s'ajoutent au diplôme selon les procédés.",
+        (
+            Voie(
+                "CAP ou bac pro, puis BTS",
+                (
+                    _cap("Réalisations industrielles en chaudronnerie ou soudage"),
+                    _bac_pro("Technicien en chaudronnerie industrielle"),
+                    _bts(
+                        "BTS Conception et réalisation en chaudronnerie industrielle",
+                        ("BTS - Conception et réalisation en chaudronnerie industrielle",),
+                    ),
+                ),
+            ),
+            Voie("Titre professionnel", (_titre_pro("Soudeur assembleur industriel"),), _REPRISE),
+        ),
+    ),
+    _metier_pro(
+        "mecanicien-auto",
+        "Mécanicien ou mécanicienne automobile",
+        ("I1604",),
+        ("mécanicien", "garagiste", "mécanique auto", "automobile", "moto"),
+        "En garage, en concession ou dans un réseau d'entretien rapide ; puis chef d'atelier, "
+        "réceptionnaire ou garagiste à son compte.",
+        (
+            Voie(
+                "CAP, puis bac pro",
+                (
+                    _cap("Maintenance des véhicules, option voitures particulières"),
+                    _bac_pro(
+                        "Maintenance des véhicules",
+                        "En 2 ans après le CAP, ou 3 ans après la 3e. Options voitures, "
+                        "véhicules de transport routier ou motocycles.",
+                    ),
+                ),
+            ),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Maintenance des véhicules"),
+                    _bts("BTS Maintenance des véhicules", ("BTS - Maintenance des véhicules*",)),
+                ),
+            ),
+            Voie("Titre professionnel", (_titre_pro("Mécanicien automobile"),), _REPRISE),
+        ),
+    ),
+    _metier_pro(
+        "boulanger",
+        "Boulanger ou boulangère",
+        ("D1102",),
+        ("boulanger", "boulangerie", "pain", "viennoiserie"),
+        "Ouvrier boulanger, puis chef de fabrication ou artisan à son compte ; le BP est le "
+        "diplôme de référence pour reprendre une boulangerie.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (
+                    _cap("Boulanger"),
+                    Etape(
+                        "Après le CAP · 1 an",
+                        "Spécialisation boulangerie spécialisée (facultative)",
+                        "Ancienne mention complémentaire, devenue certificat de spécialisation.",
+                    ),
+                    _bp("Boulanger"),
+                ),
+                "La voie la plus courante, presque toujours en apprentissage.",
+            ),
+            Voie("Bac pro", (_bac_pro("Boulanger-pâtissier"),)),
+            Voie(
+                "CAP en un an, en reconversion",
+                (
+                    Etape(
+                        "Adulte · 1 an",
+                        "CAP Boulanger en formation pour adultes",
+                        "Dans un centre de formation ou en candidat libre, avec un stage en "
+                        "boulangerie.",
+                    ),
+                ),
+                _REPRISE,
+            ),
+        ),
+    ),
+    _metier_pro(
+        "patissier",
+        "Pâtissier ou pâtissière",
+        ("D1104",),
+        ("pâtissier", "patisserie", "chocolatier", "glacier", "confiseur"),
+        "En pâtisserie artisanale, en restaurant ou en hôtel, puis chef pâtissier ou artisan.",
+        (
+            Voie(
+                "CAP, puis brevet technique des métiers",
+                (
+                    _cap("Pâtissier"),
+                    Etape(
+                        "Après le CAP · 2 ans",
+                        "Brevet technique des métiers (BTM) Pâtissier confiseur glacier traiteur",
+                        "Préparé en apprentissage dans les chambres de métiers.",
+                    ),
+                ),
+            ),
+            Voie("Bac pro", (_bac_pro("Boulanger-pâtissier"),)),
+        ),
+    ),
+    _metier_pro(
+        "boucher",
+        "Boucher ou bouchère",
+        ("D1101",),
+        ("boucher", "boucherie", "charcutier", "traiteur"),
+        "En boucherie artisanale ou en grande surface, puis chef de rayon ou artisan ; métier "
+        "qui recrute beaucoup.",
+        (
+            Voie("CAP, puis brevet professionnel", (_cap("Boucher"), _bp("Boucher"))),
+            Voie("Bac pro", (_bac_pro("Boucher charcutier traiteur"),)),
+        ),
+    ),
+    _metier_pro(
+        "cuisinier",
+        "Cuisinier ou cuisinière",
+        ("G1602",),
+        ("cuisinier", "cuisine", "chef", "restauration", "commis"),
+        "Commis, puis chef de partie, second et chef de cuisine ; ou à son compte.",
+        (
+            Voie("CAP, puis brevet professionnel", (_cap("Cuisine"), _bp("Arts de la cuisine"))),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Cuisine"),
+                    _bts(
+                        "BTS Management en hôtellerie-restauration",
+                        ("BTS - Management en hôtellerie restauration",),
+                        "Sur dossier ; il ouvre aussi la gestion de restaurant et l'hôtellerie.",
+                    ),
+                ),
+            ),
+            Voie("Titre professionnel", (_titre_pro("Cuisinier"),), _REPRISE),
+        ),
+    ),
+    _metier_pro(
+        "coiffeur",
+        "Coiffeur ou coiffeuse",
+        ("D1202",),
+        ("coiffeur", "coiffure", "barbier"),
+        "En salon, puis manager ou gérant ; le BP (ou le brevet de maîtrise) est exigé pour "
+        "ouvrir ou gérer un salon.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (_cap("Métiers de la coiffure"), _bp("Coiffure")),
+                "La voie la plus courante, souvent en apprentissage.",
+            ),
+            Voie(
+                "Après le bac : BTS",
+                (
+                    _bts(
+                        "BTS Métiers de la coiffure",
+                        ("BTS - Métiers de la coiffure",),
+                        "Pour les titulaires du CAP ou du BP avec un bac ; il mène au "
+                        "management, à la formation ou aux marques.",
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "estheticien",
+        "Esthéticien ou esthéticienne",
+        ("D1208",),
+        ("esthéticienne", "esthétique", "beauté", "spa", "prothésiste ongulaire"),
+        "En institut, spa ou parfumerie, puis responsable d'institut ou à son compte.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (
+                    _cap("Esthétique, cosmétique, parfumerie"),
+                    _bp("Esthétique, cosmétique, parfumerie"),
+                ),
+            ),
+            Voie(
+                "Bac pro, puis BTS",
+                (
+                    _bac_pro("Esthétique, cosmétique, parfumerie"),
+                    _bts(
+                        "BTS Métiers de l'esthétique-cosmétique-parfumerie",
+                        ("BTS - Métiers de l'esthétique-cosmétique-parfumerie",),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "fleuriste",
+        "Fleuriste",
+        ("D1209",),
+        ("fleuriste", "fleurs", "art floral"),
+        "En boutique ou en grande surface, puis responsable de magasin ou artisan.",
+        (
+            Voie(
+                "CAP, puis brevet professionnel",
+                (
+                    _cap("Fleuriste"),
+                    _bp(
+                        "Fleuriste",
+                        "Ou brevet technique des métiers (BTM) Fleuriste, en chambre de métiers.",
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "paysagiste",
+        "Jardinier ou jardinière paysagiste",
+        ("A1203",),
+        ("paysagiste", "jardinier", "espaces verts", "élagueur"),
+        "En entreprise du paysage ou au service des espaces verts d'une commune, puis chef "
+        "d'équipe ou à son compte.",
+        (
+            Voie(
+                "CAP agricole, puis bac pro",
+                (
+                    _cap(
+                        "agricole Jardinier paysagiste",
+                        "En lycée agricole ou en apprentissage.",
+                    ),
+                    _bac_pro("Aménagements paysagers", "En lycée agricole ou en apprentissage."),
+                ),
+            ),
+            Voie(
+                "Bac pro, puis BTSA",
+                (
+                    _bac_pro("Aménagements paysagers", "En lycée agricole ou en apprentissage."),
+                    _bts(
+                        "BTSA Aménagements paysagers",
+                        ("BTSA - Aménagements paysagers", "CSA - Constructions paysagères"),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "agriculteur",
+        "Agriculteur ou agricultrice",
+        ("A1416", "A1417", "A1414"),
+        ("agriculteur", "éleveur", "exploitant agricole", "maraîcher", "viticulteur", "ferme"),
+        "Salarié agricole ou installation à son compte. Les aides à l'installation des moins de "
+        "40 ans demandent un diplôme agricole au moins de niveau bac (bac pro, BPREA ou BTSA).",
+        (
+            Voie(
+                "Bac pro, puis BTSA",
+                (
+                    _bac_pro(
+                        "Conduite et gestion de l'entreprise agricole",
+                        "En lycée agricole ou en apprentissage, avec stages en exploitation.",
+                    ),
+                    _bts(
+                        "BTSA Analyse, conduite et stratégie de l'entreprise agricole",
+                        ("BTSA - Analyse, conduite et stratégie de l'entreprise agricole*",),
+                        "Sur dossier ; des certificats de spécialisation (élevage, maraîchage) "
+                        "complètent sur un an.",
+                    ),
+                ),
+            ),
+            Voie(
+                "BPREA, en reconversion",
+                (
+                    Etape(
+                        "Adulte · 1 an",
+                        "Brevet professionnel responsable d'entreprise agricole (BPREA)",
+                        "En centre de formation pour adultes (CFPPA), avec stages ; il donne la "
+                        "capacité agricole pour les aides à l'installation.",
+                    ),
+                ),
+                _REPRISE,
+            ),
+        ),
+    ),
+    _metier_pro(
+        "chauffeur-routier",
+        "Chauffeur ou chauffeuse routier",
+        ("N4101",),
+        ("chauffeur", "routier", "camion", "poids lourd", "livreur", "conducteur"),
+        "Transport régional ou international, livraison, citerne… Le permis C (porteur) ou CE "
+        "(semi-remorque) et la formation obligatoire FIMO sont indispensables.",
+        (
+            Voie(
+                "CAP ou bac pro en lycée",
+                (
+                    _cap("Conducteur livreur de marchandises"),
+                    _bac_pro(
+                        "Conducteur transport routier marchandises",
+                        "Il inclut les permis poids lourd et la FIMO, passés pendant la formation.",
+                    ),
+                ),
+            ),
+            Voie(
+                "Titre professionnel",
+                (
+                    _titre_pro(
+                        "Conducteur du transport routier de marchandises",
+                        "Sur porteur (permis C) ou sur tous véhicules (permis CE) ; permis et "
+                        "FIMO compris, souvent financés par France Travail ou un employeur.",
+                    ),
+                ),
+                _REPRISE,
+            ),
+        ),
+        lycee="Après la 3e en lycée professionnel, ou plus tard en formation pour adultes. "
+        "Le permis B est utile ; les permis poids lourd se passent pendant la formation.",
+    ),
+    _metier_pro(
+        "conducteur-bus",
+        "Conducteur ou conductrice de bus et de car",
+        ("N4103",),
+        ("chauffeur de bus", "conducteur de bus", "car", "autocar", "transport en commun"),
+        "Lignes urbaines, scolaires ou interurbaines, tourisme. Permis D et formation "
+        "obligatoire FIMO voyageurs.",
+        (
+            Voie(
+                "Titre professionnel",
+                (
+                    _titre_pro(
+                        "Conducteur du transport en commun sur route",
+                        "Permis D et FIMO compris ; les réseaux de transport financent souvent la "
+                        "formation à l'embauche. Le permis D s'obtient en général à partir de "
+                        "21 ans.",
+                    ),
+                ),
+                "La voie la plus courante.",
+            ),
+            Voie(
+                "CAP en lycée",
+                (_cap("Agent d'accueil et de conduite routière, transport de voyageurs"),),
+            ),
+        ),
+        lycee="Pas de diplôme exigé au départ : on entre le plus souvent en formation adulte. "
+        "Le permis B est requis.",
+        depart="Au départ",
+    ),
+    _metier_pro(
+        "taxi-vtc",
+        "Chauffeur ou chauffeuse de taxi ou de VTC",
+        ("N4102",),
+        ("taxi", "vtc", "chauffeur privé", "uber"),
+        "Salarié, locataire ou indépendant. Un taxi doit aussi disposer d'une autorisation de "
+        "stationnement (licence) ou travailler pour quelqu'un qui en a une.",
+        (
+            Voie(
+                "Examen taxi ou VTC",
+                (
+                    Etape(
+                        "Dès 3 ans de permis B",
+                        "Examen taxi ou VTC",
+                        "Organisé par les chambres de métiers et de l'artisanat ; il se prépare "
+                        "dans une école agréée ou seul. Permis B depuis 3 ans (2 ans après la "
+                        "conduite accompagnée).",
+                    ),
+                    Etape(
+                        "Après l'examen",
+                        "Carte professionnelle",
+                        "Délivrée par la préfecture, après vérification du casier judiciaire et "
+                        "visite médicale.",
+                    ),
+                ),
+            ),
+        ),
+        lycee="Aucun diplôme exigé : l'accès passe par le permis et un examen professionnel.",
+        depart="Au départ",
+    ),
+    _metier_pro(
+        "aide-soignant",
+        "Aide-soignant ou aide-soignante",
+        ("J1501",),
+        ("aide soignant", "aide-soignante", "soins", "ehpad", "hôpital"),
+        "À l'hôpital, en Ehpad ou à domicile. Beaucoup d'aides-soignants deviennent ensuite "
+        "infirmiers, avec un accès réservé en institut.",
+        (
+            Voie(
+                "Bac pro, puis diplôme d'État",
+                (
+                    _bac_pro(
+                        "Accompagnement, soins et services à la personne",
+                        "En lycée professionnel ; il allège la formation d'aide-soignant.",
+                    ),
+                    Etape(
+                        "Après le bac pro · environ 1 an",
+                        "Diplôme d'État d'aide-soignant (DEAS)",
+                        "En institut de formation d'aides-soignants (IFAS), sur dossier et "
+                        "entretien ; formation allégée pour ce bac pro.",
+                    ),
+                ),
+            ),
+            Voie(
+                "Directement en institut",
+                (
+                    Etape(
+                        "Dès 17 ans · environ 1 an",
+                        "Diplôme d'État d'aide-soignant (DEAS)",
+                        "Sans diplôme exigé, sur dossier et entretien ; aussi en apprentissage "
+                        "ou en reconversion.",
+                    ),
+                ),
+            ),
+        ),
+    ),
+    _metier_pro(
+        "auxiliaire-puericulture",
+        "Auxiliaire de puériculture",
+        ("J1304",),
+        ("auxiliaire de puériculture", "crèche", "petite enfance", "maternité"),
+        "En crèche, en maternité ou en service de pédiatrie.",
+        (
+            Voie(
+                "Bac pro, puis diplôme d'État",
+                (
+                    _bac_pro(
+                        "Accompagnement, soins et services à la personne",
+                        "En lycée professionnel ; il allège la formation.",
+                    ),
+                    Etape(
+                        "Après le bac pro · environ 1 an",
+                        "Diplôme d'État d'auxiliaire de puériculture (DEAP)",
+                        "En institut de formation, sur dossier et entretien.",
+                    ),
+                ),
+            ),
+            Voie(
+                "Directement en institut",
+                (
+                    Etape(
+                        "Dès 17 ans · environ 1 an",
+                        "Diplôme d'État d'auxiliaire de puériculture (DEAP)",
+                        "Sans diplôme exigé, sur dossier et entretien ; un CAP Accompagnant "
+                        "éducatif petite enfance allège la formation.",
+                    ),
+                ),
+            ),
+        ),
+    ),
+)
+
+METIERS: tuple[MetierCible, ...] = _METIERS_SUP + _METIERS_PRO
 
 
 def resoudre(motif: str, libelles: list[str], familles: dict[str, str]) -> list[int]:

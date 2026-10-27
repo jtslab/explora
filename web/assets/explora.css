@@ -615,3 +615,4 @@ details.toutes ul { list-style: none; margin: 0; padding: 0; break-inside: avoid
   .voies { grid-template-columns: minmax(0, 1fr); }
   .frise-formations li { max-width: 100%; }
 }
+.recherche li.aucun { padding: 8px; color: var(--discret); font-size: 14px; }

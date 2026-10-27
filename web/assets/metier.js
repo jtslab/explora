@@ -14,7 +14,8 @@
   var MAX_FORMATIONS = 6;
   var MAX_VOIES_AUTO = 4;
   var EXEMPLES = [["avocat", "Avocat"], ["medecin", "Médecin"], ["ingenieur", "Ingénieur"],
-    ["infirmier", "Infirmier"], ["professeur-des-ecoles", "Professeur des écoles"], ["architecte", "Architecte"]];
+    ["infirmier", "Infirmier"], ["plombier", "Plombier"], ["boulanger", "Boulanger"],
+    ["chauffeur-routier", "Chauffeur routier"], ["professeur-des-ecoles", "Professeur des écoles"]];
   var VIDES = ["je", "veux", "etre", "devenir", "faire", "travailler", "dans", "de", "des", "du", "d",
     "la", "le", "les", "l", "un", "une", "en", "et", "ou", "a", "au", "aux", "metier", "metiers"];
 
@@ -103,13 +104,18 @@
     choix = chercher(champ.value);
     actif = choix.length ? 0 : -1;
     if (!choix.length) {
-      liste.hidden = true;
+      if (mots(champ.value).length) {
+        liste.innerHTML = '<li class="aucun">Pas encore de chemin pour ce métier. Essayez un mot plus court ou un métier proche.</li>';
+        liste.hidden = false;
+      } else {
+        liste.hidden = true;
+      }
       champ.setAttribute("aria-expanded", "false");
       return;
     }
     liste.innerHTML = choix.map(function (x, i) {
       var detail = x.genre === "cible"
-        ? x.data.voies.length + " voies"
+        ? x.data.voies.length + (x.data.voies.length > 1 ? " voies" : " voie")
         : x.mentions.length + (x.mentions.length > 1 ? " formations" : " formation");
       return '<li><button type="button" role="option" id="metier-choix-' + i + '" aria-selected="' +
         (i === actif) + '" data-i="' + i + '"><span>' + echapper(x.titre) + "</span><small>" + detail +
@@ -156,9 +162,9 @@
     if (x.genre === "cible") {
       var c = x.data;
       return {
-        id: c.id, titre: c.titre, metier: c.metier, auto: false,
+        id: c.id, titre: c.titre, metier: c.metier, depart: c.depart, auto: false,
         voies: c.voies.map(function (v) {
-          return { titre: v.titre, resume: v.resume, lycee: c.lycee, etapes: v.etapes };
+          return { titre: v.titre, resume: v.resume, lycee: c.lycee, depart: c.depart, etapes: v.etapes };
         })
       };
     }
@@ -210,9 +216,11 @@
 
   function frise(c, v, tout) {
     var premiere = v.etapes.find(function (e) { return e[3].length; });
-    var spe = premiere ? specialites(premiere[3]) : [];
+    // Les spécialités des bacheliers généraux n'éclairent pas un départ après la 3e.
+    var spe = premiere && (!v.depart || v.depart === "Lycée") ? specialites(premiere[3]) : [];
     var html = '<ol class="frise">';
-    html += '<li class="frise-etape"><span class="niv">Lycée</span><h4>Bac et spécialités</h4><p>' + echapper(v.lycee) + "</p>" +
+    html += '<li class="frise-etape"><span class="niv">' + echapper(v.depart || "Lycée") + "</span><h4>" +
+      (!v.depart || v.depart === "Lycée" ? "Bac et spécialités" : "Point de départ") + "</h4><p>" + echapper(v.lycee) + "</p>" +
       (spe.length ? '<p class="frise-donnee">Bacheliers généraux admis en ' + echapper(arbre.session) + " dans ces formations : " +
         spe.map(function (d) { return echapper(d[0]) + " (" + d[1] + " %)"; }).join(", ") + ".</p>" : "") + "</li>";
     v.etapes.forEach(function (e) {
@@ -237,14 +245,15 @@
     var html = "<h3>" + (c.auto ? "Métier : " + echapper(c.titre)
       : "Devenir " + echapper(c.titre.charAt(0).toLowerCase() + c.titre.slice(1))) + "</h3>" +
       '<p class="chemin-aide">' + (c.voies.length > 1
-        ? c.voies.length + " voies possibles. Choisissez-en une pour voir le chemin, du lycée au métier."
-        : "Le chemin, du lycée au métier.") +
+        ? c.voies.length + " voies possibles. Choisissez-en une pour voir le chemin jusqu'au métier."
+        : "Le chemin jusqu'au métier.") +
+      (c.depart && c.depart !== "Lycée" ? " Les CAP, bacs pro et titres professionnels se préparent dans un lycée professionnel, un CFA ou un centre de formation proche de chez soi ; la carte ne recense que les formations après le bac." : "") +
       (c.auto ? " Chemin établi d'après les formations qui mènent à ce métier." : "") + "</p>";
     if (c.voies.length > 1) {
       html += '<div class="voies" role="tablist" aria-label="Voies possibles">' + c.voies.map(function (x, i) {
         var fin = x.etapes[x.etapes.length - 1][0];
         return '<button type="button" role="tab" class="voie' + (i === n ? " choisie" : "") + '" aria-selected="' + (i === n) +
-          '" data-voie="' + i + '"><small>Voie ' + (i + 1) + (c.auto ? "" : " · " + echapper(fin)) + "</small><b>" +
+          '" data-voie="' + i + '"><small>Voie ' + (i + 1) + (c.auto || (c.depart && c.depart !== "Lycée") ? "" : " · " + echapper(fin)) + "</small><b>" +
           echapper(x.titre) + "</b>" + (x.resume ? "<span>" + echapper(x.resume) + "</span>" : "") + "</button>";
       }).join("") + "</div>";
     }

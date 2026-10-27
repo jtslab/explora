@@ -69,3 +69,5 @@ def test_site(tmp_path: Path) -> None:
     licence = avocat["voies"][0]["etapes"][0]
     assert [arbre["mentions"][i][0] for i in licence[3]] == ["L1 - Droit"]
     assert cibles["metiers"] == []
+    plombier = next(c for c in cibles["cibles"] if c["id"] == "plombier")
+    assert plombier["depart"] == "Après la 3e" and avocat["depart"] == "Lycée"

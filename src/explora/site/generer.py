@@ -475,6 +475,7 @@ def _cibles(
             "mots": list(c.mots),
             "romes": list(c.romes),
             "lycee": c.lycee,
+            "depart": c.depart,
             "metier": c.metier,
             "voies": [
                 {
