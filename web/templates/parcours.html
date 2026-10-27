@@ -17,8 +17,20 @@
       <span aria-current="page">Parcours</span>
     </nav>
     <h1>Après le bac&nbsp;: où entrer, jusqu'où aller<span>Le parcours type de chaque famille de formation</span></h1>
-    <p class="resume">Pour chaque famille de formation&nbsp;: le niveau de diplôme atteint, la façon d'y entrer, le bac et les spécialités à choisir au lycée, puis les poursuites et les passerelles. Les chiffres viennent des admissions de la session {{ parcours.session }}.</p>
+    <p class="resume">Partez du métier visé pour voir les chemins qui y mènent, ou de votre bac pour explorer les familles de formation. Pour chaque famille de formation&nbsp;: le niveau de diplôme atteint, la façon d'y entrer, le bac et les spécialités à choisir au lycée, puis les poursuites et les passerelles. Les chiffres viennent des admissions de la session {{ parcours.session }}.</p>
   </div>
+
+  <section class="section metier-section" aria-labelledby="metier-titre">
+    <header><h2 id="metier-titre">Je veux devenir…</h2></header>
+    <p class="arbre-aide">Tapez le métier visé&nbsp;: Explora remonte le chemin jusqu'au lycée, avec les différentes voies pour y arriver, les spécialités à choisir et les villes qui proposent chaque formation.</p>
+    <div class="recherche recherche-metier">
+      <label class="bloc-titre" for="metier-recherche">Métier visé</label>
+      <input id="metier-recherche" type="search" placeholder="Avocat d'affaires, infirmière, ingénieur…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="metier-suggestions" disabled>
+      <ul id="metier-suggestions" role="listbox" hidden></ul>
+    </div>
+    <div class="metier-exemples" id="metier-exemples"></div>
+    <div class="chemin" id="chemin" data-racine="{{ racine }}" aria-live="polite" hidden></div>
+  </section>
 
   <section class="section arbre-section" aria-labelledby="arbre-titre">
     <header><h2 id="arbre-titre">Explorer les parcours</h2></header>
@@ -84,5 +96,6 @@
 <footer class="pied-page">Explora · outil indépendant · données publiques ouvertes · <a href="https://github.com/jtslab/explora">code source</a></footer>
 {% endblock %}
 {% block scripts %}
+<script src="{{ racine }}assets/metier.js"></script>
 <script src="{{ racine }}assets/parcours.js"></script>
 {% endblock %}
