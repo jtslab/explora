@@ -21,6 +21,7 @@ from explora.modules.etudiant.scoring import Axe
 from explora.site import formations as fm
 from explora.site import insertion as ins
 from explora.site import metiers as mt
+from explora.site import metiers_cibles as mc
 from explora.site import parcours as pc
 from explora.site.donnees import ExportVilles, FeatureVille, ProprietesVille, charger, slugs
 
@@ -452,6 +453,64 @@ def _arbre(index: fm.IndexFormations, parcours: pc.IndexParcours) -> str:
     )
 
 
+def _cibles(
+    index: fm.IndexFormations, parcours: pc.IndexParcours, metiers: mt.IndexMetiers | None
+) -> str:
+    """Chemins vers les métiers : voies rédigées (`metiers_cibles`) et métiers du RNCP.
+
+    Les formations sont des indices dans les mentions de `parcours-arbre.json`.
+    """
+    libelles = [m.libelle for m in index.mentions if m.libelle in parcours.mentions]
+    familles = {lib: parcours.mentions[lib].famille for lib in libelles}
+    villes = dict(zip((m.libelle for m in index.mentions), index.villes_par_mention(), strict=True))
+
+    def formations(motifs: tuple[str, ...]) -> list[int]:
+        trouvees = {i for motif in motifs for i in mc.resoudre(motif, libelles, familles)}
+        return sorted(trouvees, key=lambda i: (-len(villes[libelles[i]]), libelles[i]))
+
+    cibles = [
+        {
+            "id": c.id,
+            "titre": c.titre,
+            "mots": list(c.mots),
+            "romes": list(c.romes),
+            "lycee": c.lycee,
+            "metier": c.metier,
+            "voies": [
+                {
+                    "titre": v.titre,
+                    "resume": v.resume,
+                    "etapes": [
+                        [e.niveau, e.titre, e.texte, formations(e.formations)] for e in v.etapes
+                    ],
+                }
+                for v in c.voies
+            ],
+        }
+        for c in mc.METIERS
+    ]
+    rang = {lib: i for i, lib in enumerate(libelles)}
+    rome: dict[str, list[int]] = defaultdict(list)
+    if metiers:
+        for lib in libelles:
+            corresp = metiers.mentions.get(lib)
+            for code in corresp.romes if corresp else []:
+                rome[code].append(rang[lib])
+    return json.dumps(
+        {
+            "cibles": cibles,
+            # [code ROME, libellé, indices des mentions]
+            "metiers": [
+                [code, metiers.metiers[code], mentions] for code, mentions in sorted(rome.items())
+            ]
+            if metiers
+            else [],
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
 def generer(
     export: ExportVilles,
     dossier_web: Path,
@@ -521,6 +580,9 @@ def generer(
     if parcours is not None and formations is not None:
         (sortie / "data" / "parcours-arbre.json").write_text(
             _arbre(formations, parcours), encoding="utf-8"
+        )
+        (sortie / "data" / "metiers-cibles.json").write_text(
+            _cibles(formations, parcours, metiers), encoding="utf-8"
         )
     if parcours is not None:
         page = sortie / "parcours" / "index.html"

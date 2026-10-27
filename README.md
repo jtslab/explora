@@ -131,6 +131,10 @@ python -m http.server -d dist/site 8001                     # puis http://localh
   spécialités des bacheliers généraux admis. Sert les filtres « Entrer » et « Diplôme
   visé » de la carte et la page `/parcours/`. Régénération :
   `uv run python -m explora.site.parcours`.
+- Chemins vers les métiers (« Je veux devenir… » sur `/parcours/`) : les voies des
+  métiers réglementés (avocat, médecin, ingénieur…) sont rédigées dans
+  `src/explora/site/metiers_cibles.py` ; pour les autres métiers, les voies sont déduites
+  des formations rattachées au métier dans `web/data/metiers.json`.
 - Fond de carte : Plan IGN (Géoplateforme, WMTS), désaturé.
 - Démo publiée par `.github/workflows/pages.yml` à chaque merge sur `main`
   (activer Settings > Pages > Source « GitHub Actions »).

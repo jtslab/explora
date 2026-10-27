@@ -276,7 +276,14 @@
     var familles = new Set(indices.map(function (i) { return formations.mentions[i].famille; }));
     var id = familles.size === 1 ? familles.values().next().value : null;
     var f = id && formations.familles[id];
-    if (!f) { zone.hidden = true; return; }
+    var lienMetier = selection && selection.metier
+      ? '<p><a href="parcours/?metier=' + encodeURIComponent(selection.metier) + '">Les chemins vers ce métier, du lycée à l\'emploi →</a></p>'
+      : "";
+    if (!f) {
+      zone.innerHTML = lienMetier;
+      zone.hidden = !lienMetier;
+      return;
+    }
     var m = indices.length === 1 ? formations.mentions[indices[0]] : null;
     var lignes = ["<p><b>" + echapper(f[0]) + "</b></p>",
       "<p>Après le bac" + (f[2].length ? " (ou avec un bac+" + f[2].join(", bac+") + ")" : "") + " → " +
@@ -293,6 +300,7 @@
       }).join(", ") + "</p>");
     }
     lignes.push('<p><a href="parcours/#' + encodeURIComponent(id) + '">Parcours type : spécialités, accès, passerelles →</a></p>');
+    if (lienMetier) lignes.push(lienMetier);
     zone.innerHTML = lignes.join("");
     zone.hidden = false;
   }
@@ -316,7 +324,11 @@
     var res = [];
     formations.metiers
       .filter(function (m) { return correspond(m.cle, mots); })
-      .map(function (m) { return { m: m, f: filtreMentions("Métier : " + m.libelle, m.mentions) }; })
+      .map(function (m) {
+        var f = filtreMentions("Métier : " + m.libelle, m.mentions);
+        f.metier = m.code;
+        return { m: m, f: f };
+      })
       .sort(function (a, b) { return b.f.ids.size - a.f.ids.size; })
       .slice(0, 4)
       .forEach(function (x) {
