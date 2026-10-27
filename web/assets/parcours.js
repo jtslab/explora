@@ -131,25 +131,67 @@
     return cols;
   }
 
+  // Sur téléphone, les colonnes deviennent des étapes empilées : les choix faits se replient.
+  function vertical() {
+    return window.matchMedia("(max-width: 760px)").matches;
+  }
+
+  function noeudHtml(c, n, max) {
+    var choisi = String(etat[c.cle]) === String(n.id) && !n.plus;
+    var largeur = max > 0 ? Math.max(2, Math.round((100 * n.valeur) / max)) : 0;
+    return '<li><button type="button" class="noeud' + (choisi ? " choisi" : "") + (n.plus ? " plus" : "") +
+      '" data-cle="' + c.cle + '" data-id="' + echapper(n.id) + '" aria-pressed="' + choisi + '">' +
+      '<span class="noeud-nom">' + echapper(n.libelle) + "</span>" +
+      (n.plus ? "" : '<span class="noeud-barre"><i style="width:' + largeur + '%"></i></span>' +
+        '<span class="noeud-val">' + (n.valeur > 0 ? nombre(n.valeur) : "n.d.") +
+        (n.detail ? " · " + n.detail : "") + "</span>") +
+      "</button></li>";
+  }
+
+  function maxDe(c) {
+    var max = 0;
+    c.noeuds.forEach(function (n) { max = Math.max(max, n.valeur); });
+    return max;
+  }
+
+  function dessinerVertical(cols) {
+    var html = '<ol class="etapes-arbre">';
+    cols.forEach(function (c, i) {
+      var choix = etat[c.cle] === null ? null : c.noeuds.filter(function (n) {
+        return String(n.id) === String(etat[c.cle]) && !n.plus;
+      })[0];
+      var derniere = i === cols.length - 1;
+      if (choix && (!derniere || c.cle === "mention")) {
+        html += '<li class="etape faite"><span class="etape-titre">' + c.titre + "</span>" +
+          '<button type="button" class="etape-choix" data-rouvrir="' + c.cle + '">' +
+          '<span class="noeud-nom">' + echapper(choix.libelle) + "</span>" +
+          '<span class="noeud-val">' + (choix.valeur > 0 ? nombre(choix.valeur) + " " + c.mesure : "") + "</span>" +
+          '<span class="etape-modifier">Changer</span></button></li>';
+      } else {
+        var max = maxDe(c);
+        html += '<li class="etape ouverte"><span class="etape-titre">' + c.titre + " <small>" + c.mesure +
+          '</small></span><ul role="list">' + c.noeuds.map(function (n) { return noeudHtml(c, n, max); }).join("") +
+          "</ul></li>";
+      }
+    });
+    zone.classList.add("arbre-vertical");
+    zone.innerHTML = html + "</ol>";
+  }
+
   function dessiner() {
     var cols = colonnes();
+    if (vertical()) {
+      dessinerVertical(cols);
+      return;
+    }
+    zone.classList.remove("arbre-vertical");
     var html = '<svg class="arbre-liens" aria-hidden="true"></svg><div class="arbre-colonnes">';
     cols.forEach(function (c) {
       var max = 0;
       c.noeuds.forEach(function (n) { max = Math.max(max, n.valeur); });
       html += '<div class="arbre-col" data-cle="' + c.cle + '"><div class="arbre-tete"><b>' + c.titre +
         "</b><small>" + c.mesure + '</small></div><ul role="list">';
-      c.noeuds.forEach(function (n) {
-        var choisi = String(etat[c.cle]) === String(n.id) && !n.plus;
-        var largeur = max > 0 ? Math.max(2, Math.round((100 * n.valeur) / max)) : 0;
-        html += '<li><button type="button" class="noeud' + (choisi ? " choisi" : "") + (n.plus ? " plus" : "") +
-          '" data-cle="' + c.cle + '" data-id="' + echapper(n.id) + '" aria-pressed="' + choisi + '">' +
-          '<span class="noeud-nom">' + echapper(n.libelle) + "</span>" +
-          (n.plus ? "" : '<span class="noeud-barre"><i style="width:' + largeur + '%"></i></span>' +
-            '<span class="noeud-val">' + (n.valeur > 0 ? nombre(n.valeur) : "n.d.") +
-            (n.detail ? " · " + n.detail : "") + "</span>") +
-          "</button></li>";
-      });
+      c.noeuds.forEach(function (n) { html += noeudHtml(c, n, max); });
       html += "</ul></div>";
     });
     zone.innerHTML = html + "</div>";
@@ -198,8 +240,17 @@
     dernier = cle;
     dessiner();
     afficherDetail();
-    // Sur téléphone, on amène la nouvelle colonne à l'écran.
-    zone.scrollTo({ left: zone.scrollWidth, behavior: "smooth" });
+    amenerALecran(cle);
+  }
+
+  // Bureau : la nouvelle colonne entre dans le cadre. Téléphone : l'étape suivante, ou le détail à la fin.
+  function amenerALecran(cle) {
+    if (!vertical()) {
+      zone.scrollTo({ left: zone.scrollWidth, behavior: "smooth" });
+      return;
+    }
+    var cible = cle === "mention" ? detail : zone.querySelector(".etape.ouverte") || detail;
+    cible.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function partsFamilles(valeurDe) {
@@ -279,6 +330,16 @@
   }
 
   zone.addEventListener("click", function (e) {
+    var r = e.target.closest("[data-rouvrir]");
+    if (r) {
+      var cle = r.getAttribute("data-rouvrir");
+      ORDRE.slice(ORDRE.indexOf(cle)).forEach(function (k) { etat[k] = null; });
+      if (cle !== "bac" && cle !== "doublette" && etat.bac !== 0) etat.doublette = "";
+      etat.tout = false;
+      dessiner();
+      amenerALecran(cle === "mention" ? "niveau" : cle);
+      return;
+    }
     var b = e.target.closest(".noeud");
     if (b) choisir(b.getAttribute("data-cle"), b.getAttribute("data-id"));
   });
@@ -294,7 +355,16 @@
     choisir("famille", f);
     zone.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-  window.addEventListener("resize", function () { if (d) relier(); });
+  var modeVertical = vertical();
+  window.addEventListener("resize", function () {
+    if (!d) return;
+    if (vertical() !== modeVertical) {
+      modeVertical = vertical();
+      dessiner();
+    } else if (!modeVertical) {
+      relier();
+    }
+  });
 
   fetch(racine + "data/parcours-arbre.json")
     .then(function (r) {
