@@ -136,6 +136,11 @@ python -m http.server -d dist/site 8001                     # puis http://localh
   par CAP, bac pro ou titre professionnel (plombier, boulanger, chauffeur…) sont rédigées dans
   `src/explora/site/metiers_cibles.py` ; pour les autres métiers, les voies sont déduites
   des formations rattachées au métier dans `web/data/metiers.json`.
+- `web/data/voie_pro.json` : CAP, bacs pro, brevets professionnels et mentions
+  complémentaires des lycées professionnels et des CFA des villes du site, avec le devenir
+  des sortants (InserJeunes, DEPP), situés par l'annuaire de l'Éducation nationale.
+  Fusionné à l'index des formations à la génération du site. Régénération :
+  `uv run python -m explora.site.voie_pro`.
 - Fond de carte : Plan IGN (Géoplateforme, WMTS), désaturé.
 - Démo publiée par `.github/workflows/pages.yml` à chaque merge sur `main`
   (activer Settings > Pages > Source « GitHub Actions »).

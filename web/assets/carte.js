@@ -18,6 +18,8 @@
     "976": { center: [45.14, -12.82], zoom: 9.8 }
   };
   var CLE_POIDS = "explora.poids";
+  // Types de la voie professionnelle (CAP, bac pro...), préparés après la 3e.
+  var VOIE_PRO = ["CAP", "Bac professionnel", "Brevet professionnel", "Mention complémentaire"];
   var GROUPES = { ville: "Villes", metier: "Métiers", secteur: "Secteurs d'activité", formation: "Formations" };
 
   var E = window.Explora;
@@ -221,7 +223,10 @@
   // Une formation répond-elle aux niveaux d'entrée et de sortie demandés ?
   function passe(i, n) {
     var m = formations.mentions[i];
-    if (n.entree) {
+    var voiePro = VOIE_PRO.indexOf(formations.types[m.type].libelle) !== -1;
+    if (n.entree === "3e") {
+      if (!voiePro) return false;
+    } else if (n.entree) {
       if (ACCES[n.entree]) {
         if (m.acces !== n.entree) return false;
       } else {

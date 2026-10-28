@@ -122,20 +122,23 @@
       </div>
       {% for type_, liste in formations %}
       {% set total_type = namespace(n=0) %}
-      {% for f in liste %}{% for o in f.offres %}{% set total_type.n = total_type.n + o.urls|length %}{% endfor %}{% endfor %}
+      {% for f in liste %}{% for o in f.offres %}{% set total_type.n = total_type.n + o.nb %}{% endfor %}{% endfor %}
       {% set total_type = total_type.n %}
       <details{% if loop.first and formations|length <= 3 %} open{% endif %}>
         <summary><span>{{ type_ }}</span><small>{{ total_type }}</small></summary>
         <ul>
           {% for f in liste %}
           {% set fp = f.parcours %}
-          <li data-n="{{ f.offres|map(attribute="urls")|map("length")|sum }}"{% if fp and fp.sortie %} data-sortie="{{ [fp.sortie, 5]|min }}"{% endif %}>
+          <li data-n="{{ f.offres|map(attribute="nb")|sum }}"{% if fp and fp.sortie %} data-sortie="{{ [fp.sortie, 5]|min }}"{% endif %}>
             <strong class="mention">{{ f.mention }}</strong>
             {% if fp %}
             <span class="niveaux"><span class="niv">Après le bac</span><span class="fleche" aria-hidden="true">→</span><span class="niv niv-sortie" title="{{ FAMILLES[fp.famille].sortie }}">{{ fp.sortie|bac_plus }}</span><span class="acces">{{ ACCES[fp.acces] }}</span><a href="{{ racine }}parcours/#{{ fp.famille }}">Parcours type</a></span>
             {% if fp.profil or fp.specialites %}
             <span class="admis">Admis en {{ parcours.session }}{% if fp.profil %} : {{ fp.profil.bacs|bacs }}{% endif %}{% if fp.specialites %}{{ " · " if fp.profil else " : " }}spécialités les plus fréquentes {% for d, part in fp.specialites.doublettes[:2] %}{{ d }} ({{ part }}&nbsp;%){{ ", " if not loop.last }}{% endfor %}{% endif %}</span>
             {% endif %}
+            {% endif %}
+            {% if f.depart %}
+            <span class="niveaux"><span class="niv">{{ f.depart }}</span></span>
             {% endif %}
             {% if f.metiers %}
             <span class="metiers">Métiers visés : {{ f.metiers[:4]|join(", ") }}{% if f.metiers|length > 4 %}…{% endif %}</span>
@@ -146,11 +149,11 @@
             <ul class="etabs">
               {% for o in f.offres %}
               <li>
-                <a href="{{ o.urls[0] }}" rel="noopener" target="_blank">{{ o.etablissement }}</a>
+                {% if o.urls %}<a href="{{ o.urls[0] }}" rel="noopener" target="_blank">{{ o.etablissement }}</a>{% else %}<span class="etab">{{ o.etablissement }}</span>{% endif %}
                 {% if o.urls|length > 1 %}
                 <span class="parcours">{{ o.urls|length }} parcours :{% for u in o.urls %} <a href="{{ u }}" rel="noopener" target="_blank" aria-label="Parcours {{ loop.index }} à {{ o.etablissement }}">{{ loop.index }}</a>{% endfor %}</span>
                 {% endif %}
-                <span class="tags">{{ "public" if o.public else "privé" }}{% if o.apprentissage %} · apprentissage possible{% endif %}{% if o.acces %}{% if o.acces.taux is not none %} · taux d'accès {{ o.acces.taux }}&nbsp;%{% endif %}{% if o.acces.concours %} · {{ o.acces.concours }}{% endif %}{% endif %}</span>
+                <span class="tags">{{ "public" if o.public else "privé" }}{% if o.apprentissage %} · {{ "en apprentissage" if f.depart else "apprentissage possible" }}{% endif %}{% if o.acces %}{% if o.acces.taux is not none %} · taux d'accès {{ o.acces.taux }}&nbsp;%{% endif %}{% if o.acces.concours %} · {{ o.acces.concours }}{% endif %}{% endif %}</span>
                 {% if o.insertion %}
                 <span class="devenir" title="Diplômés de l'établissement, promotion {{ o.insertion.promo }}">Après le diplôme : {{ o.insertion|devenir }}</span>
                 {% endif %}
@@ -163,7 +166,7 @@
       </details>
       {% endfor %}
       <p class="aucune" hidden>Aucune formation ne correspond à ce filtre.</p>
-      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.{% if source_metiers %} Les métiers visés viennent de la fiche du diplôme au répertoire national des certifications ; les formations généralistes (prépas, écoles d'ingénieurs, PASS) n'y sont pas rattachées.{% endif %}{% if insertion %} Le devenir des diplômés vient d'InserSup (ministère de l'Enseignement supérieur) pour les diplômes du supérieur et d'InserJeunes (ministère de l'Éducation nationale) pour les BTS : part qui poursuit ses études, puis part en emploi 12 mois après la sortie parmi ceux qui ont arrêté, et salaire net médian quand il est publié. Faute de chiffre pour l'établissement, la moyenne nationale du diplôme est indiquée.{% endif %}{% if parcours %} Le niveau de sortie et le parcours type sont des repères généraux par famille de formation. Le profil des admis (type de bac, spécialités des bacheliers généraux) porte sur la dernière session de la plateforme nationale d'admission, toutes villes confondues ; le taux d'accès est la part des candidats de l'établissement qui ont pu recevoir une proposition.{% endif %}</p>
+      <p class="aide">Formations accessibles en première année via la plateforme nationale d'admission, session {{ session_formations }}. Chaque lien ouvre la fiche officielle de la formation. Certaines écoles recrutent hors plateforme et n'apparaissent pas ici.{% if voie_pro %} Les CAP, bacs pro, brevets professionnels et mentions complémentaires viennent d'InserJeunes (ministère de l'Éducation nationale) : formations des lycées professionnels et des centres de formation d'apprentis qui ont eu des sortants ces dernières années ; une partie des centres d'apprentissage, faute d'adresse publiée, n'y figure pas. On s'y inscrit après la 3e auprès du lycée ou de l'employeur, sans passer par la plateforme post-bac.{% endif %}{% if source_metiers %} Les métiers visés viennent de la fiche du diplôme au répertoire national des certifications ; les formations généralistes (prépas, écoles d'ingénieurs, PASS) n'y sont pas rattachées.{% endif %}{% if insertion %} Le devenir des diplômés vient d'InserSup (ministère de l'Enseignement supérieur) pour les diplômes du supérieur et d'InserJeunes (ministère de l'Éducation nationale) pour les BTS : part qui poursuit ses études, puis part en emploi 12 mois après la sortie parmi ceux qui ont arrêté, et salaire net médian quand il est publié. Faute de chiffre pour l'établissement, la moyenne nationale du diplôme est indiquée.{% endif %}{% if parcours %} Le niveau de sortie et le parcours type sont des repères généraux par famille de formation. Le profil des admis (type de bac, spécialités des bacheliers généraux) porte sur la dernière session de la plateforme nationale d'admission, toutes villes confondues ; le taux d'accès est la part des candidats de l'établissement qui ont pu recevoir une proposition.{% endif %}</p>
     </div>
     {% endif %}
   </section>

@@ -17,6 +17,8 @@ est rappelé dans le texte.
 
 from dataclasses import dataclass, field
 
+from explora.site import formations as fm
+
 
 @dataclass(frozen=True)
 class Etape:
@@ -833,23 +835,25 @@ _APRES_3E = (
 )
 
 
-def _cap(nom: str, texte: str = "") -> Etape:
+def _cap(nom: str, texte: str = "", formations: tuple[str, ...] = ()) -> Etape:
     return Etape(
         "Après la 3e · 2 ans",
         f"CAP {nom}",
         texte
         or "En lycée professionnel ou en apprentissage. En un an pour qui a déjà un CAP, "
         "un bac ou plus.",
+        formations or (f"CAP - {nom}*",),
     )
 
 
-def _bac_pro(nom: str, texte: str = "") -> Etape:
+def _bac_pro(nom: str, texte: str = "", formations: tuple[str, ...] = ()) -> Etape:
     return Etape(
         "Après la 3e · 3 ans",
         f"Bac pro {nom}",
         texte
         or "En lycée professionnel ou en apprentissage. Il mène à l'emploi ou à un BTS du "
         "même domaine.",
+        formations or (f"Bac pro - {nom}*",),
     )
 
 
@@ -860,6 +864,7 @@ def _bp(nom: str, texte: str = "") -> Etape:
         texte
         or "En apprentissage. Il approfondit le métier et prépare à encadrer une équipe ou "
         "à reprendre une entreprise.",
+        (f"BP - {nom}*",),
     )
 
 
@@ -924,6 +929,10 @@ _METIERS_PRO: tuple[MetierCible, ...] = (
                         "Monteur en installations sanitaires",
                         "Ou CAP Monteur en installations thermiques pour le chauffage. En lycée "
                         "professionnel ou en apprentissage.",
+                        (
+                            "CAP - Monteur en installations sanitaires",
+                            "CAP - Monteur en installations thermiques",
+                        ),
                     ),
                     _bp("Monteur en installations du génie climatique et sanitaire"),
                 ),
@@ -1031,7 +1040,7 @@ _METIERS_PRO: tuple[MetierCible, ...] = (
             Voie(
                 "Bac pro, puis BTS",
                 (
-                    _bac_pro("Interventions sur le patrimoine bâti, option couverture"),
+                    _bac_pro("Interventions sur le patrimoine bâti, option C couverture"),
                     _bts(
                         "BTS Enveloppe des bâtiments",
                         ("BTS - Enveloppe des bâtiments*",),
@@ -1054,6 +1063,7 @@ _METIERS_PRO: tuple[MetierCible, ...] = (
                         "Menuisier fabricant",
                         "Ou CAP Menuisier installateur pour la pose sur chantier. En lycée "
                         "professionnel ou en apprentissage.",
+                        ("CAP - Menuisier fabricant", "CAP - Menuisier installateur"),
                     ),
                     _bp("Menuisier"),
                 ),
@@ -1107,7 +1117,7 @@ _METIERS_PRO: tuple[MetierCible, ...] = (
             Voie(
                 "CAP, puis bac pro",
                 (
-                    _cap("Maintenance des véhicules, option voitures particulières"),
+                    _cap("Maintenance des véhicules, option A voitures particulières"),
                     _bac_pro(
                         "Maintenance des véhicules",
                         "En 2 ans après le CAP, ou 3 ans après la 3e. Options voitures, "
@@ -1141,6 +1151,7 @@ _METIERS_PRO: tuple[MetierCible, ...] = (
                         "Après le CAP · 1 an",
                         "Spécialisation boulangerie spécialisée (facultative)",
                         "Ancienne mention complémentaire, devenue certificat de spécialisation.",
+                        ("MC - Boulangerie spécialisée",),
                     ),
                     _bp("Boulanger"),
                 ),
@@ -1301,6 +1312,7 @@ _METIERS_PRO: tuple[MetierCible, ...] = (
                     _cap(
                         "agricole Jardinier paysagiste",
                         "En lycée agricole ou en apprentissage.",
+                        ("CAP - Jardinier paysagiste",),
                     ),
                     _bac_pro("Aménagements paysagers", "En lycée agricole ou en apprentissage."),
                 ),
@@ -1522,11 +1534,16 @@ METIERS: tuple[MetierCible, ...] = _METIERS_SUP + _METIERS_PRO
 
 
 def resoudre(motif: str, libelles: list[str], familles: dict[str, str]) -> list[int]:
-    """Indices des mentions désignées par un motif (exact, préfixe* ou famille:id)."""
+    """Indices des mentions désignées par un motif (exact, préfixe* ou famille:id).
+
+    La comparaison ignore casse, accents et ponctuation : InserJeunes écrit « genie » ou
+    « Electricien(ne) » là où les chemins écrivent « génie » et « Électricien ».
+    """
     if motif.startswith("famille:"):
         cible = motif.removeprefix("famille:")
         return [i for i, lib in enumerate(libelles) if familles.get(lib) == cible]
     if motif.endswith("*"):
-        prefixe = motif[:-1]
-        return [i for i, lib in enumerate(libelles) if lib.startswith(prefixe)]
-    return [i for i, lib in enumerate(libelles) if lib == motif]
+        prefixe = fm.normaliser(motif[:-1])
+        return [i for i, lib in enumerate(libelles) if fm.normaliser(lib).startswith(prefixe)]
+    cible = fm.normaliser(motif)
+    return [i for i, lib in enumerate(libelles) if fm.normaliser(lib) == cible]

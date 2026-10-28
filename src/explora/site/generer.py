@@ -23,6 +23,7 @@ from explora.site import insertion as ins
 from explora.site import metiers as mt
 from explora.site import metiers_cibles as mc
 from explora.site import parcours as pc
+from explora.site import voie_pro as vp
 from explora.site.donnees import ExportVilles, FeatureVille, ProprietesVille, charger, slugs
 
 FORMATIONS = {
@@ -271,6 +272,9 @@ class OffreVille:
     public: bool
     apprentissage: bool
     urls: tuple[str, ...]
+    """Fiches officielles (plateforme d'admission post-bac) ; aucune pour la voie pro."""
+    nb: int = 1
+    """Nombre de parcours proposés dans l'établissement."""
     insertion: ins.Insertion | None = None
     """Devenir des diplômés de l'établissement (le chiffre national va sur la formation)."""
     acces: pc.OffreAcces | None = None
@@ -286,6 +290,8 @@ class FormationVille:
     insertion_nationale: ins.Insertion | None = None
     parcours: pc.MentionParcours | None = None
     """Famille, niveau de sortie, profil des admis."""
+    depart: str = ""
+    """Pour la voie professionnelle : « Après la 3e », « Après un CAP »..."""
 
 
 def formations_par_type(
@@ -324,8 +330,11 @@ def formations_par_type(
             public=bool(etab and etab.secteur == "Publics"),
             apprentissage=any(o.apprentissage for o in offres),
             urls=tuple(
-                fm.URL_FICHE.format(code=o.code) for o in sorted(offres, key=lambda o: o.code)
+                fm.URL_FICHE.format(code=o.code)
+                for o in sorted(offres, key=lambda o: o.code)
+                if not o.code.startswith(vp.PREFIXE_CODE)
             ),
+            nb=len(offres),
             insertion=locaux[0] if locaux else None,
             acces=next(
                 (a for o in offres if parcours and (a := parcours.offres.get(o.code))), None
@@ -345,6 +354,7 @@ def formations_par_type(
                 else (),
                 insertion_nationale=nationale.get(i),
                 parcours=parcours.mentions.get(mention.libelle) if parcours else None,
+                depart=vp.DEPARTS.get(index.types[mention.type], ""),
             )
         )
     return sorted(
@@ -468,6 +478,17 @@ def _cibles(
         trouvees = {i for motif in motifs for i in mc.resoudre(motif, libelles, familles)}
         return sorted(trouvees, key=lambda i: (-len(villes[libelles[i]]), libelles[i]))
 
+    # CAP, bacs pro... : hors de l'arbre, cités par libellé avec leur nombre de villes.
+    pro = [m.libelle for m in index.mentions if index.types[m.type] in vp.TYPES]
+    familles_pro = {lib: "voie-pro" for lib in pro}
+
+    def formations_pro(motifs: tuple[str, ...]) -> list[list[object]]:
+        trouvees = {i for motif in motifs for i in mc.resoudre(motif, pro, familles_pro)}
+        return [
+            [pro[i], len(villes[pro[i]])]
+            for i in sorted(trouvees, key=lambda i: (-len(villes[pro[i]]), pro[i]))
+        ]
+
     cibles = [
         {
             "id": c.id,
@@ -482,7 +503,14 @@ def _cibles(
                     "titre": v.titre,
                     "resume": v.resume,
                     "etapes": [
-                        [e.niveau, e.titre, e.texte, formations(e.formations)] for e in v.etapes
+                        [
+                            e.niveau,
+                            e.titre,
+                            e.texte,
+                            formations(e.formations),
+                            formations_pro(e.formations),
+                        ]
+                        for e in v.etapes
                     ],
                 }
                 for v in c.voies
@@ -546,6 +574,7 @@ def generer(
         "base_url": base_url,
         "total": len(villes),
         "session_formations": formations.session if formations else None,
+        "voie_pro": bool(formations and set(formations.types) & set(vp.TYPES)),
         "source_metiers": metiers.source if metiers else None,
         "insertion": insertion is not None,
         "parcours": parcours,
@@ -650,12 +679,20 @@ def main() -> None:
     parser.add_argument("--metiers", type=Path, default=Path("web/data/metiers.json"))
     parser.add_argument("--insertion", type=Path, default=Path("web/data/insertion.json"))
     parser.add_argument("--parcours", type=Path, default=Path("web/data/parcours.json"))
+    parser.add_argument("--voie-pro", type=Path, default=Path("web/data/voie_pro.json"))
     parser.add_argument("--base-url", default="https://explora.app")
     args = parser.parse_args()
     index = fm.charger(args.formations) if args.formations.exists() else None
     index_metiers = mt.charger(args.metiers) if args.metiers.exists() else None
     index_insertion = ins.charger(args.insertion) if args.insertion.exists() else None
     index_parcours = pc.charger(args.parcours) if args.parcours.exists() else None
+    if index is not None and args.voie_pro.exists():
+        voie = vp.charger(args.voie_pro)
+        index = vp.fusionner(index, voie.formations)
+        index_insertion = ins.IndexInsertion(
+            genere_le=index_insertion.genere_le if index_insertion else voie.genere_le,
+            offres={**(index_insertion.offres if index_insertion else {}), **voie.insertion},
+        )
     pages = generer(
         charger(args.donnees),
         args.web,
