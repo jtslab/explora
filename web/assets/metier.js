@@ -200,15 +200,19 @@
       .slice(0, 3);
   }
 
-  function puces(indices, tout) {
-    var vus = tout ? indices : indices.slice(0, MAX_FORMATIONS);
-    var html = '<ul class="frise-formations">' + vus.map(function (i) {
-      var m = arbre.mentions[i];
+  // Formations d'une étape : [libellé, nombre de villes], post-bac (indices de l'arbre) puis voie pro.
+  function formationsEtape(e) {
+    return e[3].map(function (i) { return [arbre.mentions[i][0], arbre.mentions[i][6]]; }).concat(e[4] || []);
+  }
+
+  function puces(liste, tout) {
+    var vus = tout ? liste : liste.slice(0, MAX_FORMATIONS);
+    var html = '<ul class="frise-formations">' + vus.map(function (m) {
       return '<li><a href="' + racine + "?formation=" + encodeURIComponent(m[0]) + '">' + echapper(m[0]) +
-        "<small>" + nbVilles(m[6]) + "</small></a></li>";
+        "<small>" + nbVilles(m[1]) + "</small></a></li>";
     }).join("") + "</ul>";
-    if (!tout && indices.length > MAX_FORMATIONS) {
-      html += '<button type="button" class="frise-plus" data-tout>Voir les ' + (indices.length - MAX_FORMATIONS) +
+    if (!tout && liste.length > MAX_FORMATIONS) {
+      html += '<button type="button" class="frise-plus" data-tout>Voir les ' + (liste.length - MAX_FORMATIONS) +
         " autres formations</button>";
     }
     return html;
@@ -226,7 +230,7 @@
     v.etapes.forEach(function (e) {
       html += '<li class="frise-etape"><span class="niv">' + echapper(e[0]) + "</span><h4>" + echapper(e[1]) + "</h4>" +
         (e[2] ? "<p>" + echapper(e[2]) + "</p>" : "") +
-        (e[3].length ? '<p class="frise-donnee">Dans les villes du site :</p>' + puces(e[3], tout) : "") + "</li>";
+        (formationsEtape(e).length ? '<p class="frise-donnee">Dans les villes du site :</p>' + puces(formationsEtape(e), tout) : "") + "</li>";
     });
     html += '<li class="frise-etape frise-arrivee"><span class="niv niv-sortie">Métier</span><h4>' + echapper(c.titre) + "</h4>" +
       (c.metier ? "<p>" + echapper(c.metier) + "</p>" : "") +
@@ -247,7 +251,7 @@
       '<p class="chemin-aide">' + (c.voies.length > 1
         ? c.voies.length + " voies possibles. Choisissez-en une pour voir le chemin jusqu'au métier."
         : "Le chemin jusqu'au métier.") +
-      (c.depart && c.depart !== "Lycée" ? " Les CAP, bacs pro et titres professionnels se préparent dans un lycée professionnel, un CFA ou un centre de formation proche de chez soi ; la carte ne recense que les formations après le bac." : "") +
+      (c.depart && c.depart !== "Lycée" ? " Les CAP et bacs pro se préparent en lycée professionnel ou en apprentissage : touchez une formation pour voir les villes qui la proposent. Les titres professionnels, préparés en centre de formation pour adultes, ne sont pas sur la carte." : "") +
       (c.auto ? " Chemin établi d'après les formations qui mènent à ce métier." : "") + "</p>";
     if (c.voies.length > 1) {
       html += '<div class="voies" role="tablist" aria-label="Voies possibles">' + c.voies.map(function (x, i) {

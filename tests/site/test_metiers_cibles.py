@@ -7,6 +7,7 @@ import pytest
 from explora.site import formations as fm
 from explora.site import metiers_cibles as mc
 from explora.site import parcours as pc
+from explora.site import voie_pro as vp
 from explora.site.donnees import ExportVilles, Metadonnees
 from explora.site.generer import generer
 from tests.site.test_insertion import RACINE
@@ -15,6 +16,7 @@ from tests.site.test_site import _ville
 
 FORMATIONS = RACINE / "web" / "data" / "formations.json"
 PARCOURS = RACINE / "web" / "data" / "parcours.json"
+VOIE_PRO = RACINE / "web" / "data" / "voie_pro.json"
 
 
 def test_metiers_uniques() -> None:
@@ -32,15 +34,22 @@ def test_resoudre() -> None:
     assert mc.resoudre("CPGE - ECG*", libelles, familles) == [1, 2]
     assert mc.resoudre("famille:las", libelles, familles) == [3]
     assert mc.resoudre("L1 - Dro", libelles, familles) == []
+    # Casse, accents et ponctuation ignorés.
+    assert mc.resoudre("l1 - droit", libelles, familles) == [0]
+    assert mc.resoudre("BP - Électricien*", ["BP - Electricien(ne)"], {}) == [0]
 
 
-@pytest.mark.skipif(not FORMATIONS.exists() or not PARCOURS.exists(), reason="données absentes")
+@pytest.mark.skipif(
+    not FORMATIONS.exists() or not PARCOURS.exists() or not VOIE_PRO.exists(),
+    reason="données absentes",
+)
 def test_formations_citees_existent() -> None:
     """Chaque formation citée dans un chemin désigne au moins une mention réelle."""
     index = fm.charger(FORMATIONS)
     parcours = pc.charger(PARCOURS)
     libelles = [m.libelle for m in index.mentions if m.libelle in parcours.mentions]
-    familles = {lib: parcours.mentions[lib].famille for lib in libelles}
+    libelles += [m.libelle for m in vp.charger(VOIE_PRO).formations.mentions]
+    familles = {lib: parcours.mentions[lib].famille for lib in libelles if lib in parcours.mentions}
     manquantes = [
         (m.id, motif)
         for m in mc.METIERS
